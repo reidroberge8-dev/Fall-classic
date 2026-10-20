@@ -430,6 +430,12 @@ details.course:not([open]){gap:0}
 .tscore{font-size:12px;font-weight:800;padding:1px 6px;border-radius:999px;background:var(--sunk);color:var(--fg)}
 .tscore.under{background:var(--green);color:var(--green-ink)}
 .tscore.over{background:var(--danger);color:#fff}
+.taken{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:18px 6px 6px}
+.taken-ic{font-size:40px;line-height:1}
+.taken h2{font-size:30px}
+.taken p{color:var(--muted);max-width:32ch}
+.taken-actions{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:6px}
+.taken-actions .btn{width:100%;min-height:50px;font-size:17px}
 /* ---- Mobile tuning ---- */
 @media (max-width:520px){
   .brand{font-size:0;flex:0 0 auto;width:30px;overflow:visible}
@@ -779,11 +785,29 @@ function vTeam(){
 function vEntry(t,ps){
   const n=S.hole, h=hole(n);
   if(!S.draft||S.draft.tid!==t.id||S.draft.n!==n){
-    const v={}; ps.forEach(p=>{const e=entry(p.id,n);v[p.id]={s:e?.s??null,p:e?.p??null,had:!!e};}); S.draft={tid:t.id,n,v};
+    const v={}; ps.forEach(p=>{const e=entry(p.id,n);v[p.id]={s:e?.s??null,p:e?.p??null,had:!!e};});
+    S.draft={tid:t.id,n,v,startedEmpty:!ps.every(p=>entry(p.id,n))};
   }
   const v=S.draft.v; ps.forEach(p=>{if(!v[p.id])v[p.id]={s:null,p:null,had:false};});
   const ready=ps.every(p=>v[p.id].s!=null&&v[p.id].p!=null);
   const allIn=ps.every(p=>entry(p.id,n));
+  // Another phone on this team saved this hole while we were on it: tell this phone and offer the next hole
+  const hkey=t.id+":"+n;
+  if(S.draft.startedEmpty&&allIn&&!(S.savedHere||{})[hkey]&&!(S.ackHole||{})[hkey]){
+    const strip0=Array.from({length:18},(_,i)=>{const m=i+1;const done=ps.every(p=>entry(p.id,m));return `<button type="button" class="hs ${m===n?"cur":""} ${done?"done":""}" data-act="hole" data-n="${m}">${m}</button>`}).join("");
+    return `<section class="panel entry">
+      <div class="hs-row" role="group" aria-label="Holes">${strip0}</div>
+      <div class="taken" role="alert">
+        <div class="taken-ic" aria-hidden="true">✅</div>
+        <h2>Hole ${n} is already in</h2>
+        <p>Someone else on your team already entered scores for hole ${n}.${n<18?` Head on to hole ${n+1}.`:""}</p>
+        <div class="taken-actions">
+          ${n<18?`<button class="btn primary big-ish" type="button" data-act="hole" data-n="${n+1}">Go to hole ${n+1}</button>`:""}
+          <button class="btn" type="button" data-act="ackhole">Review or edit hole ${n}</button>
+        </div>
+      </div>
+    </section>`;
+  }
   // live preview of team score using draft values
   const k=Math.min(counts(n),ps.length);
   const nets=ps.filter(p=>v[p.id].s!=null).map(p=>({id:p.id,v:v[p.id].s-strokes(p,n)})).sort((a,b)=>a.v-b.v);
@@ -1339,7 +1363,8 @@ app.addEventListener("click",async e=>{
     if(f==="s") d.s = d.s==null ? (hole(S.draft.n)?.par||4) : Math.max(1,Math.min(15,d.s+dd));
     else d.p = d.p==null ? 2 : Math.max(0,Math.min(9,d.p+dd));
     if(d.p!=null&&d.s!=null&&d.p>d.s)d.p=d.s; return render();}
-  if(act==="savehole"){const D=S.draft;if(!D)return;
+  if(act==="ackhole"){ const D=S.draft; if(D){ (S.ackHole=S.ackHole||{})[D.tid+":"+D.n]=true; } S.draft=null; return render(); }
+  if(act==="savehole"){const D=S.draft;if(!D)return; (S.savedHere=S.savedHere||{})[D.tid+":"+D.n]=true;
     if(Object.values(D.v).some(d=>d.s==null||d.p==null)) return toast("Enter every golfer's score and putts first.");
     b.disabled=true;
     const shouts=shoutouts(D);
