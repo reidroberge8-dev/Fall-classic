@@ -577,6 +577,8 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .putt-table th.c,.putt-table td.c{text-align:center}
 .putt-table td.c{position:relative}
 .putt-table td.c .star{position:absolute;margin-left:4px}
+.lb-grid{grid-template-columns:22px minmax(0,1fr) 64px 44px;gap:10px}
+@media (max-width:400px){.lb-grid{grid-template-columns:18px minmax(0,1fr) 56px 40px;gap:8px}}
 </style>
 </head>
 <body>
@@ -979,8 +981,7 @@ function vBoard(){
     const open=S.openTeams.has(r.t.id), ps=teamPlayers(r.t.id);
     return `<details class="lb-row ${r.t.id===S.teamId?"mine":""}" data-team="${esc(r.t.id)}" ${open?"open":""}>
       <summary class="lb-grid num"><span>${r.x.thru?pos:""}</span><span class="tn"><span class="tn-name fit1" data-max="16" data-min="11">${esc(r.t.name)}</span><span class="sc-toggle"><span class="when-closed">Show scorecard ▾</span><span class="when-open">Hide scorecard ▴</span></span></span>
-      <span class="r"><b>${r.x.thru?fmtPar(r.x.toPar):"–"}</b></span><span class="r">${r.x.thru?(r.x.thru===18?"F":r.x.thru):(r.t.teeTime?fmtTime(r.t.teeTime):"–")}</span>
-      <span class="r">${r.x.thru?r.x.score:"–"}</span></summary>
+      <span class="r"><b>${r.x.thru?fmtPar(r.x.toPar):"–"}</b></span><span class="r">${r.x.thru?(r.x.thru===18?"F":r.x.thru):(r.t.teeTime?fmtTime(r.t.teeTime):"–")}</span></summary>
       <div class="lb-body">${open?(ps.length?vTeamCard(r.t,ps,true):`<p class="muted">No golfers on this team yet.</p>`):""}</div>
     </details>`}).join("");
   const pc=p=>{let one=0,three=0,holes=0,tot=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(!e)continue;holes++;const v=Number(e.p);if(!isNaN(v))tot+=v;if(v===1)one++;else if(v>=3)three++;}return {one,three,holes,tot};};
@@ -1001,7 +1002,7 @@ function vBoard(){
     </div>
   </section>
   ${ts.length?`<section class="panel"><h2 class="fit1" data-max="28" data-min="15">Live Standings – Team Competition</h2>
-    <div class="lb-grid lb-head"><span>#</span><span>Team</span><span class="r">Net score</span><span class="r">Thru</span><span class="r">Team score</span></div>
+    <div class="lb-grid lb-head"><span>#</span><span>Team</span><span class="r">Net score</span><span class="r">Thru</span></div>
     <div class="lb-list">${rows}</div>
     <p class="note">Net, to par. A hole counts once every golfer on the team has entered a score.</p></section>`
     :`<div class="empty"><b>No ${divName(d)} teams yet</b></div>`}
