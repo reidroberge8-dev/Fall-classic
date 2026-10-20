@@ -235,11 +235,12 @@ details.course:not([open]){gap:0}
 .board td.tn{font-weight:600;overflow-wrap:anywhere}
 .board tr.mine td{background:var(--green-soft)}
 .sp output.blank{color:var(--muted);opacity:.6}
-.prow.todo{border-color:var(--line);border-style:dashed}
+.prow.todo{border-color:transparent}
+.prow.ready{border-color:var(--green);border-style:solid;box-shadow:inset 0 0 0 1px var(--green)}
 .hs.part{border-color:var(--flag)}
 .prows{display:flex;flex-direction:column;gap:8px}
 .prow{display:grid;grid-template-columns:1fr auto auto;gap:8px 10px;align-items:center;background:var(--sunk);border-radius:10px;padding:10px;border:1.5px solid transparent}
-.prow.counts{border-color:var(--green);background:var(--green-soft)}
+.prow.counts{background:var(--green-soft)}
 .pname{display:flex;flex-direction:column;min-width:0}
 .pname b{overflow-wrap:anywhere}
 .pname span{font-size:13px;color:var(--muted)}
@@ -816,7 +817,7 @@ function vEntry(t,ps){
   const strip=Array.from({length:18},(_,i)=>{const m=i+1;const done=ps.every(p=>entry(p.id,m));const part=!done&&ps.some(p=>entry(p.id,m));
     return `<button type="button" class="hs ${m===n?"cur":""} ${done?"done":part?"part":""}" data-act="hole" data-n="${m}" aria-label="Hole ${m}${done?", entered":""}">${m}</button>`}).join("");
   const rows=ps.map(p=>{const d=v[p.id], kk=strokes(p,n), nv=d.s==null?"–":d.s-kk, pid=esc(p.id);
-    return `<div class="prow ${cntIds.includes(p.id)?"counts":""} ${d.s==null||d.p==null?"todo":""}">
+    return `<div class="prow ${cntIds.includes(p.id)?"counts":""} ${d.s==null||d.p==null?"todo":"ready"}">
       <div class="pname"><b>${esc(p.name)}</b><span class="num">${dots(kk)}${kk?` ${kk>0?kk+" stroke"+(kk>1?"s":""):"gives "+(-kk)}`:"no stroke"} · net <b>${nv}</b></span></div>
       <div class="mini"><span class="lbl">Score</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="s" data-d="-1" aria-label="${esc(p.name)} score down">−</button><output class="num ${d.s==null?"blank":d.s<h.par?"under":d.s>h.par?"over":""}">${d.s??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="s" data-d="1" aria-label="${esc(p.name)} score up">+</button></div></div>
       <div class="mini"><span class="lbl">Putts</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="-1" aria-label="${esc(p.name)} putts down">−</button><output class="num ${d.p==null?"blank":d.p<=1?"p1":d.p===2?"p2":"p3"}">${d.p??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="1" aria-label="${esc(p.name)} putts up">+</button></div></div>
