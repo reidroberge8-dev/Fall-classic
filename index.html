@@ -657,7 +657,7 @@ function vWelcome(){
   const ev=S.event||{};
   const name=eventName();
   const m=name.match(/^(.*?)\s*(Fall Classic|Classic|Invitational|Open|Championship)$/i);
-  const top=m?m[1]:"", big=m?m[2]:name;
+  const top="End of Season", big=m?m[2]:name;
   const flag=`<svg class="flag" viewBox="0 0 42 120" aria-hidden="true"><rect x="4" y="6" width="3" height="112" fill="#f4f1e6"/><path d="M7 6 L40 18 L7 30 Z" fill="#e3b51b"/><ellipse cx="6" cy="117" rx="9" ry="3" fill="rgba(0,0,0,.25)"/></svg>`;
   return `${!S.hero?.off?`<img class="photo" src="${esc(heroSrc())}" alt="" onerror="this.remove()">`:`<div class="scene"></div>${flag}`}
   <div class="shade"></div>
