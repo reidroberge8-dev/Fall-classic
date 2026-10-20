@@ -924,6 +924,13 @@ function aEvent(){
       <div class="row-actions" style="justify-content:flex-start">
         <button class="btn sm" type="button" data-act="testheckle">▶ Play 3-putt sound</button>
         ${S.heckle?.data?`<button class="btn sm" type="button" data-act="clearheckle">Use built-in clip instead</button>`:""}
+      </div></div>
+    <div class="photo-slot" style="margin-top:6px"><label class="eyebrow" for="upAce">Hole-in-one sound</label>
+      <p class="note" style="margin:0">${S.ace?.data?"Your clip plays on every hole-in-one.":"Using the built-in crowd cheer. Upload a short clip (MP3 or M4A, under 600 KB) to use your own."}</p>
+      <input id="upAce" type="file" accept="audio/*" data-slot="ace">
+      <div class="row-actions" style="justify-content:flex-start">
+        <button class="btn sm" type="button" data-act="testace">▶ Play hole-in-one sound</button>
+        ${S.ace?.data?`<button class="btn sm" type="button" data-act="clearace">Use crowd cheer instead</button>`:""}
       </div></div>`
     :""}
   </section>`;
@@ -1058,7 +1065,7 @@ function renderBoard(){
 /* ---------- message ping ---------- */
 let actx=null;
 function soundOn(){ return ls("chatSound")!=="off"; }
-function unlockAudio(){ try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C){ actx=new C(); if(heckleSrc&&!heckleBuf) setTimeout(()=>loadHeckle(heckleSrc),0); } }
+function unlockAudio(){ try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C){ actx=new C(); if(heckleSrc&&!heckleBuf) setTimeout(()=>loadHeckle(heckleSrc),0); if(aceSrc&&!aceBuf) setTimeout(()=>loadAce(aceSrc),0); } }
   if(actx&&actx.state==="suspended") actx.resume(); }catch(e){} }
 ["touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
 function sfxReady(){ if(!soundOn()) return null; unlockAudio(); return (actx&&actx.state==="running")?actx:null; }
@@ -1174,6 +1181,10 @@ let heckleBuf=null, heckleSrc=null;
 async function loadHeckle(dataUrl){ heckleSrc=dataUrl||null; heckleBuf=null; if(!dataUrl) return;
   try{ unlockAudio(); if(!actx) return; const ab=await (await fetch(dataUrl)).arrayBuffer(); heckleBuf=await actx.decodeAudioData(ab); }catch(e){ console.warn("heckle clip",e); } }
 const DEFAULT_HECKLE="sounds/three-putt.mp3";
+let aceBuf=null, aceSrc=null;
+async function loadAce(dataUrl){ aceSrc=dataUrl||null; aceBuf=null; if(!dataUrl) return;
+  try{ unlockAudio(); if(!actx) return; const ab=await (await fetch(dataUrl)).arrayBuffer(); aceBuf=await actx.decodeAudioData(ab); }catch(e){ console.warn("ace clip",e); } }
+function playClip(buf){ try{ const src=actx.createBufferSource(); src.buffer=buf; src.connect(actx.destination); src.start(actx.currentTime+0.02); return true; }catch(e){ return false; } }
 let heckleEl=null;
 function heckle(){
   if(heckleSrc&&heckleBuf&&actx){ try{ const src=actx.createBufferSource(), g=actx.createGain(); g.gain.value=1; src.buffer=heckleBuf; src.connect(g); g.connect(actx.destination); src.start(actx.currentTime+0.35); return; }catch(e){} }
@@ -1181,6 +1192,7 @@ function heckle(){
   try{ const src=heckleSrc||DEFAULT_HECKLE; if(!heckleEl||heckleEl.dataset.src!==src){ heckleEl=new Audio(src); heckleEl.dataset.src=src; }
     heckleEl.currentTime=0; const pr=heckleEl.play(); if(pr&&pr.catch) pr.catch(()=>{}); }catch(e){} }
 function playSfx(kind){ const a=sfxReady(); if(!a) return; if(kind==="boo") heckle(); try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
+  if(kind==="ace"&&aceSrc&&aceBuf&&playClip(aceBuf)) return;
   try{ (SFX[kind]||SFX.ping)(a,a.currentTime+0.02); }catch(e){} }
 function ping(){ playSfx("ping"); }
 function sysBanner(msg){ let el=document.getElementById("sysBanner");
@@ -1314,6 +1326,8 @@ app.addEventListener("click",async e=>{
   if(act==="welcome") return go("welcome");
   if(act==="division") return go("division");
   if(act==="testheckle"){ unlockAudio(); const was=ls("chatSound"); ls("chatSound","on"); playSfx("boo"); if(was) ls("chatSound",was); return; }
+  if(act==="testace"){ unlockAudio(); const was=ls("chatSound"); ls("chatSound","on"); playSfx("ace"); if(was) ls("chatSound",was); return; }
+  if(act==="clearace"){ await write(()=>db.doc("config/ace").delete(),"Back to the crowd cheer"); return; }
   if(act==="clearheckle"){ await write(()=>db.doc("config/heckle").delete(),"Back to the built-in clip"); return; }
   if(act==="clearimg"){ await write(()=>db.doc("config/"+b.dataset.slot).set({off:true}),"Photo removed"); return; }
   if(act==="start") return go("choose");
@@ -1395,11 +1409,11 @@ app.addEventListener("change",async e=>{
   if(inp.type==="time"&&inp.dataset.team){ const id=inp.dataset.team; const val=inp.value||null; inp.blur();
     await write(()=>db.doc("teams/"+id).update({teeTime:val}), val?"Tee time set to "+fmtTime(val):"Tee time cleared"); render(); return; } if(inp.type!=="file"||!inp.dataset.slot||!inp.files[0]) return;
   const f=inp.files[0];
-  if(inp.dataset.slot==="heckle"){
+  if(inp.dataset.slot==="heckle"||inp.dataset.slot==="ace"){
     if(f.size>650*1024){ inp.value=""; return toast("That clip is too big. Keep it under 600 KB (a few seconds)."); }
     toast("Uploading…");
     try{ const data=await new Promise((res,rej)=>{const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(f);});
-      await db.doc("config/heckle").set({data}); toast("3-putt sound saved"); }
+      await db.doc("config/"+inp.dataset.slot).set({data}); toast(inp.dataset.slot==="ace"?"Hole-in-one sound saved":"3-putt sound saved"); }
     catch(err){ toast(err?.code==="permission-denied"?"Only the admin can change sounds.":"Couldn't save that clip. Try an MP3."); }
     inp.value=""; return; }
   if(f.size>20*1024*1024) return toast("That photo is over 20 MB. Pick a smaller one.");
@@ -1497,6 +1511,7 @@ render();
   db.doc("config/course").onSnapshot(s=>{S.course=s.exists?s.data():DEFAULT_COURSE;render();},fail);
   db.doc("config/event").onSnapshot(s=>{S.event=s.exists?s.data():DEFAULT_EVENT;render();},fail);
   db.doc("config/hero").onSnapshot(s=>{S.hero=s.exists?s.data():null;render();},fail);
+  db.doc("config/ace").onSnapshot(s=>{S.ace=s.exists?s.data():null; loadAce(S.ace?.data); render();},fail);
   db.doc("config/heckle").onSnapshot(s=>{S.heckle=s.exists?s.data():null; loadHeckle(S.heckle?.data||DEFAULT_HECKLE); render();},fail);
   db.doc("config/logo").onSnapshot(s=>{S.logo=s.exists?s.data():null;render();},fail);
   render();
