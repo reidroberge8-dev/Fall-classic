@@ -1090,7 +1090,27 @@ const SFX={
     const n=a.createBufferSource(), nb=a.createBiquadFilter(), ng=a.createGain(); n.buffer=noiseBuf(a,dur);
     nb.type="bandpass"; nb.frequency.value=500; nb.Q.value=0.8; ng.gain.value=0.25; n.connect(nb); nb.connect(ng); ng.connect(lp); n.start(t); n.stop(t+dur); },
 };
-SFX.ace=(a,t)=>{ SFX.eagle(a,t); SFX.birdie(a,t+1.0); };
+// Crowd cheer: roaring crowd, rising "whoo" voices and scattered applause
+SFX.ace=(a,t)=>{ const dur=2.8, bus=a.createGain(); bus.connect(a.destination);
+  bus.gain.setValueAtTime(0.0001,t); bus.gain.exponentialRampToValueAtTime(1.4,t+0.25); bus.gain.setValueAtTime(1.4,t+1.9); bus.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  // roar
+  const n=a.createBufferSource(), bp=a.createBiquadFilter(), ng=a.createGain(); n.buffer=noiseBuf(a,dur);
+  bp.type="bandpass"; bp.frequency.setValueAtTime(900,t); bp.frequency.linearRampToValueAtTime(1400,t+0.6); bp.Q.value=0.6;
+  ng.gain.value=0.22; n.connect(bp); bp.connect(ng); ng.connect(bus); n.start(t); n.stop(t+dur);
+  // voices
+  for(let k=0;k<12;k++){ const o=a.createOscillator(), f=a.createBiquadFilter(), g=a.createGain(), st=t+Math.random()*0.35, base=220+Math.random()*260;
+    o.type="sawtooth"; o.frequency.setValueAtTime(base,st); o.frequency.exponentialRampToValueAtTime(base*1.5,st+0.45); o.frequency.exponentialRampToValueAtTime(base*1.25,st+1.6);
+    const v=a.createOscillator(), vd=a.createGain(); v.frequency.value=5+Math.random()*3; vd.gain.value=base*0.03; v.connect(vd); vd.connect(o.frequency);
+    f.type="bandpass"; f.frequency.value=900+Math.random()*700; f.Q.value=3;
+    g.gain.setValueAtTime(0.0001,st); g.gain.exponentialRampToValueAtTime(0.05,st+0.2); g.gain.exponentialRampToValueAtTime(0.0001,st+1.6+Math.random()*0.8);
+    o.connect(f); f.connect(g); g.connect(bus); o.start(st); o.stop(t+dur); v.start(st); v.stop(t+dur); }
+  // applause
+  const clapBuf=noiseBuf(a,0.05);
+  for(let k=0;k<70;k++){ const st=t+0.15+Math.random()*2.3, c=a.createBufferSource(), hp=a.createBiquadFilter(), cg=a.createGain();
+    c.buffer=clapBuf; hp.type="highpass"; hp.frequency.value=1200+Math.random()*1500;
+    cg.gain.setValueAtTime(0.06+Math.random()*0.08,st); cg.gain.exponentialRampToValueAtTime(0.0001,st+0.04);
+    c.connect(hp); hp.connect(cg); cg.connect(bus); c.start(st); c.stop(st+0.05); }
+};
 const SFX_RANK={ace:5,eagle:4,birdie:3,boo:2,ping:1};
 function playSfx(kind){ const a=sfxReady(); if(!a) return; try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
   try{ (SFX[kind]||SFX.ping)(a,a.currentTime+0.02); }catch(e){} }
