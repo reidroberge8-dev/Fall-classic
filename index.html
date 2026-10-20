@@ -917,7 +917,7 @@ function vEntry(t,ps){
   // Another phone on this team saved this hole while we were on it: tell this phone and offer the next hole
   const hkey=t.id+":"+n;
   if(S.draft.startedEmpty&&allIn&&!(S.savedHere||{})[hkey]&&!(S.ackHole||{})[hkey]){
-    return `<section class="panel entry"><h2 class="fit1" data-max="28" data-min="16">Hole by Hole Scorecard</h2>
+    return `<h2 class="sec-title fit1" data-max="34" data-min="18">Hole by Hole Scorecard</h2><section class="panel entry">
       ${holeNav(n,ps)}
       <div class="taken" role="alert">
         <div class="taken-ic" aria-hidden="true">✅</div>
@@ -941,7 +941,7 @@ function vEntry(t,ps){
       <div class="mini"><span class="lbl">Score</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="s" data-d="-1" aria-label="${esc(p.name)} score down">−</button><output class="num ${d.s==null?"blank":d.s<h.par?"under":d.s>h.par?"over":""}">${d.s??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="s" data-d="1" aria-label="${esc(p.name)} score up">+</button></div></div>
       <div class="mini"><span class="lbl">Putts</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="-1" aria-label="${esc(p.name)} putts down">−</button><output class="num ${d.p==null?"blank":d.p<=1?"p1":d.p===2?"p2":"p3"}">${d.p??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="1" aria-label="${esc(p.name)} putts up">+</button></div></div>
     </div>`}).join("");
-  return `<section class="panel entry"><h2 class="fit1" data-max="28" data-min="16">Hole by Hole Scorecard</h2>
+  return `<h2 class="sec-title fit1" data-max="34" data-min="18">Hole by Hole Scorecard</h2><section class="panel entry">
     ${holeNav(n,ps)}
     <div class="hole-facts hn-facts num"><span><b>${h.par}</b><small>Par</small></span><span><b>${teeFor(t.division)?.yards?.[n-1]??"–"}</b><small>Yds</small></span><span><b>${h[hcpKey(t.division)]??"–"}</b><small>HCP</small></span></div>
     <div class="prows">${rows}</div>
