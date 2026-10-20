@@ -666,7 +666,8 @@ function rulesFor(div){
   const custom=raw.split("\n").map(s=>s.replace(/^\s*[-•*\d.)]+\s*/,"").trim()).filter(Boolean);
   if(custom.length) return {list:custom,custom:true};
   const tee=(div==="ladies"?ev.ladiesTee||"Red":ev.menTee||"White");
-  return {list:[`${divName(div)} division plays from the ${tee} tees.`,
+  return {list:["Teams of 4 will tee off together.",
+    `${divName(div)} division plays from the ${tee} tees.`,
     div==="ladies"
       ? "**Shamble:** all four players tee off, the team picks the best drive, and each player plays her own ball in from there."
       : "Everyone plays their own ball from tee to green.",
