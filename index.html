@@ -449,7 +449,9 @@ details.course:not([open]){gap:0}
 .team-head{align-items:flex-start}
 .tee-top{display:flex;flex-direction:column;align-items:flex-end;font-family:var(--display);font-weight:700;font-size:20px;line-height:1.05;white-space:nowrap;flex:0 0 auto}
 .tee-top small{font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.game-list .auto-note{display:inline;color:var(--green);font-weight:800;font-family:inherit;font-size:inherit;text-transform:none;letter-spacing:0}
+.auto-card{display:flex;gap:10px;align-items:center;background:var(--green-soft);border:1.5px solid var(--green);border-radius:8px;padding:12px 14px;color:var(--green);font-size:16px}
+.auto-card b{font-weight:800}
+.sec-title{margin-bottom:-10px}
 .pick-modal{align-items:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .dialog{position:relative;background:var(--bg);width:100%;max-width:420px;border-radius:18px;padding:22px 18px 18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
 .dialog h2{font-size:30px}
@@ -628,10 +630,12 @@ function vHome(){
     <h2>Two games, one round</h2>
     <p>Two games run at the same time during today's round.</p>
     <div class="game-list">
-      <div><b>1 · Team Competition</b><span>${d==="ladies"?"Teams of four playing a shamble: everyone tees off, the team picks the best drive, then each player plays her own ball in. Front 9: the team's best net score counts. Back 9: the best 2 net scores count.":"Teams of four, everyone plays their own ball. Front 9: the team's best net score counts. Back 9: the best 2 net scores count."} <strong class="auto-note">Just enter scores and putts. The app does the rest!</strong></span></div>
+      <div><b>1 · Team Competition</b><span>${d==="ladies"?"Teams of four playing a shamble: everyone tees off, the team picks the best drive, then each player plays her own ball in. Front 9: the team's best net score counts. Back 9: the best 2 net scores count.":"Teams of four, everyone plays their own ball. Front 9: the team's best net score counts. Back 9: the best 2 net scores count."}</span></div>
       <div><b>2 · 3-Putt Poker</b><span>A putting side game. Putt everything out (no gimmes) and record every player's putts on each hole. Every 3-putt or worse costs that player $1 to the pot.</span></div>
     </div>
+    <div class="auto-card"><span aria-hidden="true">✅</span><b>Just enter scores and putts. The app does the rest!</b></div>
   </section>
+  <h2 class="sec-title">Buy In</h2>
   <section class="buyin">
     <div class="bi-item"><b class="num">$10</b><span>Buy-in per player at the start of the round.</span></div>
     <div class="bi-item"><b class="num">+$1</b><span>Per three-putt or worse, added to the pot.</span></div>
