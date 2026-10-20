@@ -1183,9 +1183,10 @@ function renderBoard(){
 /* ---------- message ping ---------- */
 let actx=null;
 function soundOn(){ return ls("chatSound")!=="off"; }
-function unlockAudio(){ try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C){ actx=new C(); if(heckleSrc&&!heckleBuf) setTimeout(()=>loadHeckle(heckleSrc),0); if(aceSrc&&!aceBuf) setTimeout(()=>loadAce(aceSrc),0); } }
+function unlockAudio(){ try{ if(navigator.audioSession&&navigator.audioSession.type!=="playback") navigator.audioSession.type="playback"; }catch(e){}
+  try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C){ actx=new C(); if(heckleSrc&&!heckleBuf) setTimeout(()=>loadHeckle(heckleSrc),0); if(aceSrc&&!aceBuf) setTimeout(()=>loadAce(aceSrc),0); } }
   if(actx&&actx.state==="suspended") actx.resume(); }catch(e){} }
-["touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
+["touchstart","touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
 function sfxReady(){ if(!soundOn()) return null; unlockAudio(); return (actx&&actx.state==="running")?actx:null; }
 function noiseBuf(a,secs){ const b=a.createBuffer(1,Math.ceil(a.sampleRate*secs),a.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; return b; }
 function outdoor(a,dest,secs,wet){ const c=a.createConvolver(), n=Math.ceil(a.sampleRate*secs), ir=a.createBuffer(2,n,a.sampleRate);
@@ -1509,7 +1510,8 @@ app.addEventListener("click",async e=>{
         await ref.set({h:{[D.n]:{s:d.s,p:d.p}},by:myUid},{merge:true}); }
       for(const x of shouts){ try{ await postChat(x.t,"auto",x.snd); }catch(e){} }
       if(shouts.length){ const top=shouts.reduce((m,x)=>SFX_RANK[x.snd]>SFX_RANK[m.snd]?x:m); playSfx(top.snd); }
-      toast(`Hole ${D.n} saved`); if(D.n<18){S.hole=D.n+1;} S.draft=null; render();
+      if(shouts.length){ const top=shouts.reduce((m,x)=>SFX_RANK[x.snd]>SFX_RANK[m.snd]?x:m); toast(top.t); } else toast(`Hole ${D.n} saved`);
+      if(D.n<18){S.hole=D.n+1;} S.draft=null; render();
       const en=document.querySelector(".entry"); if(en){const y=en.getBoundingClientRect().top+window.scrollY-70; window.scrollTo({top:Math.max(0,y),behavior:"smooth"});} }
     catch(err){ b.disabled=false; toast(err?.code==="permission-denied"?"Couldn't save. Reload the page and try again.":"Couldn't save. Check your connection and try again."); }
     return;}
