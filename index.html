@@ -1408,6 +1408,20 @@ async function postChat(t,kind,snd){
   const at=new Date().toISOString();
   return db.collection("chat").add(kind==="auto"?{t,kind:"auto",snd:snd||"ping",at,uid:myUid}:{t,pid:me?.id||null,uid:myUid,at,kind:"msg"});
 }
+// Front 9 just completed with this save: post the team's front-nine score
+function turnShout(D){
+  if(D.n>9) return null;
+  const t=S.teams.find(x=>x.id===D.tid); if(!t) return null;
+  if(teamHole(t,D.n)) return null; // this hole was already complete before: an edit, not the finish
+  const ps=teamPlayers(t.id); if(!ps.length) return null;
+  let score=0, par=0;
+  for(let n=1;n<=9;n++){
+    if(n===D.n){ const nets=ps.map(p=>D.v[p.id]?.s!=null?D.v[p.id].s-strokes(p,n):null); if(nets.some(v=>v==null)) return null;
+      score+=Math.min(...nets); par+=hole(n)?.par||0; }
+    else { const h=teamHole(t,n); if(!h) return null; score+=h.score; par+=h.par; } }
+  const tp=score-par;
+  return {t:`🏁 ${t.name} made the turn at ${fmtPar(tp)} on the front 9 (${score} net)`,snd:"ping"};
+}
 function shoutouts(D){
   const out=[], h=hole(D.n);
   for(const [pid,d] of Object.entries(D.v)){
@@ -1420,6 +1434,7 @@ function shoutouts(D){
     else if(diff===-1) out.push({t:`🐦 ${p.name} birdied #${D.n}`,snd:"birdie"});
     if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. +$1 to the pot`,snd:"boo"});
   }
+  const turn=turnShout(D); if(turn) out.push(turn);
   return out;
 }
 function openPick(id){
