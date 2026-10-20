@@ -181,6 +181,7 @@ details.course:not([open]){gap:0}
 .hs.cur{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .hole-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
 .hole-facts{display:flex;gap:16px}
+.hole-facts small{font-size:inherit}
 .hole-facts span{display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .hole-facts b{font-family:var(--display);font-size:30px;line-height:1;color:var(--fg);letter-spacing:0}
 .steppers{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -536,6 +537,16 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .lb-row .tn{font-size:16px;line-height:1.25}
 .lb-row .sc-toggle{font-size:11px}
 @media (max-width:400px){.lb-grid{grid-template-columns:16px minmax(0,1fr) 44px 32px 44px;gap:6px}}
+/* hole header: when the browser can trim text to cap height, make the par/yds/hcp block
+   exactly as tall as "HOLE N" so tops and bottoms both line up (sized in JS by fitHoleFacts) */
+@supports (text-box: trim-both cap alphabetic){
+  .hole-head.trim{align-items:flex-end;row-gap:12px;padding-bottom:8px}
+  .hole-head.trim h2{text-box:trim-both cap alphabetic;line-height:1}
+  .hole-head.trim .hole-facts span{text-box:trim-both cap alphabetic;line-height:1;display:inline-flex;flex-direction:column;align-items:center;gap:var(--fgap,7px);vertical-align:bottom}
+  .hole-head.trim .hole-facts b{text-box:trim-both cap alphabetic;line-height:1}
+  .hole-head.trim .hole-facts small{display:block;text-box:trim-both cap alphabetic;line-height:1;font-size:inherit}
+  .hole-head.trim .hole-facts{display:flex;gap:14px;align-items:flex-end}
+}
 </style>
 </head>
 <body>
@@ -892,7 +903,7 @@ function vEntry(t,ps){
     <div class="hs-row" role="group" aria-label="Holes">${strip}</div>
     <div class="hole-head">
       <div><span class="eyebrow">${n<=9?"Front 9 · best net score":"Back 9 · best 2 net scores"}</span><h2 style="font-size:40px">Hole ${n}</h2></div>
-      <div class="hole-facts num"><span><b>${h.par}</b>Par</span><span><b>${teeFor(t.division)?.yards?.[n-1]??"–"}</b>Yds</span><span><b>${h[hcpKey(t.division)]??"–"}</b>HCP</span></div>
+      <div class="hole-facts num"><span><b>${h.par}</b><small>Par</small></span><span><b>${teeFor(t.division)?.yards?.[n-1]??"–"}</b><small>Yds</small></span><span><b>${h[hcpKey(t.division)]??"–"}</b><small>HCP</small></span></div>
     </div>
     <div class="prows">${rows}</div>
     <div class="hole-sum num">${full?`Team on this hole: <b>${tscore}</b> net (${fmtPar(tscore-h.par*k)})`:`Tap + or − to enter each golfer's score and putts. The first tap sets par for score and 2 for putts.`}</div>
@@ -1148,7 +1159,7 @@ function render(){
   // preserve focus on inputs during live re-render
   const a=document.activeElement, fid=a&&a.id, sel=a&&a.selectionStart;
   if(fid && /^(ev|p|t|c)[A-Z]/.test(fid) && S.view==="admin") return; // don't clobber a form being typed in
-  app.innerHTML=html; fitGameTitles();
+  app.innerHTML=html; fitGameTitles(); fitHoleFacts();
   if(fid){const n=document.getElementById(fid); if(n){n.focus(); try{if(sel!=null)n.setSelectionRange(sel,sel)}catch(e){}}}
 }
 function renderBoard(){
@@ -1395,6 +1406,20 @@ function fitGameTitles(){ const bs=[...document.querySelectorAll(".game-list b")
   while(size>12&&!fits()){ size-=0.5; bs.forEach(b=>b.style.fontSize=size+"px"); } }
 window.addEventListener("resize",()=>fitGameTitles());
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>fitGameTitles());
+// Size par/yds/hcp so their block matches the height of "HOLE N" (top and bottom aligned)
+function fitHoleFacts(){
+  const head=document.querySelector(".hole-head"); if(!head) return;
+  if(!(window.CSS&&CSS.supports("text-box","trim-both cap alphabetic"))) return;
+  head.classList.add("trim");
+  const h2=head.querySelector("h2"), facts=head.querySelector(".hole-facts"); if(!h2||!facts) return;
+  const target=h2.getBoundingClientRect().height; const nums=[...facts.querySelectorAll("b")];
+  let lo=8, hi=60;
+  for(let k=0;k<18;k++){ const mid=(lo+hi)/2; nums.forEach(b=>b.style.fontSize=mid+"px");
+    if(facts.getBoundingClientRect().height>target) hi=mid; else lo=mid; }
+  nums.forEach(b=>b.style.fontSize=lo+"px");
+}
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>fitHoleFacts());
+window.addEventListener("resize",()=>fitHoleFacts());
 function go(v){S.view=v;S.armed=null;render();window.scrollTo(0,0)}
 
 /* ---------- events ---------- */
