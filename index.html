@@ -418,6 +418,8 @@ details.course:not([open]){gap:0}
 .pick{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:10px 16px;font-weight:600;cursor:pointer;min-height:44px}
 .pick:active{background:var(--green);color:var(--green-ink)}
 .lb-head span{min-width:0;overflow-wrap:normal}
+#sysBanner{position:relative;z-index:6;background:#b3261e;color:#fff;font-weight:600;font-size:14px;line-height:1.35;
+  padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));text-align:center}
 /* ---- Mobile tuning ---- */
 html{-webkit-text-size-adjust:100%}
 button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
@@ -1034,6 +1036,9 @@ function renderBoard(){
   body.innerHTML=db?vBoard():`<div class="empty"><b>Sign in to see the leaderboard</b></div>`;
   body.scrollTop=y;
 }
+function sysBanner(msg){ let el=document.getElementById("sysBanner");
+  if(!el){ el=document.createElement("div"); el.id="sysBanner"; el.setAttribute("role","alert"); document.body.insertBefore(el,document.body.firstChild); }
+  el.hidden=!msg; if(msg) el.textContent=msg; }
 function shrinkImage(file,max){
   return new Promise((res,rej)=>{const img=new Image(), url=URL.createObjectURL(file);
     img.onload=()=>{let w=img.naturalWidth,h=img.naturalHeight,k=Math.min(1,max/Math.max(w,h));
@@ -1291,17 +1296,23 @@ render();
   firebase.initializeApp(firebaseConfig);
   const auth=firebase.auth();
   db=firebase.firestore();
-  const fail=e=>console.warn(e);
+  const fail=e=>{ console.warn(e); if(e&&e.code==="permission-denied"){ sysBanner("Can't load tournament data. Tournament admin: publish the Firestore security rules (see README)."); } };
   auth.getRedirectResult().catch(()=>{});
-  await new Promise(done=>{ let first=true; auth.onAuthStateChanged(async u=>{
-    if(!u){ try{ await auth.signInAnonymously(); }catch(e){ console.warn(e); } return; }
-    authUser=u; myUid=u.uid;
+  // Load data right away for everyone; sign-in only matters for saving.
+  auth.onAuthStateChanged(async u=>{
+    if(!u){ try{ await auth.signInAnonymously(); }
+      catch(e){ console.warn(e);
+        sysBanner(e&&(e.code==="auth/operation-not-allowed"||e.code==="auth/admin-restricted-operation")
+          ? "Scores and chat can't be saved yet. Tournament admin: turn on Anonymous sign-in in Firebase → Authentication → Sign-in method."
+          : "Couldn't connect to save scores. Check your connection and reload."); }
+      return; }
+    authUser=u; myUid=u.uid; sysBanner(null);
     const was=isAdmin; isAdmin=!u.isAnonymous && ADMIN_EMAILS.includes((u.email||"").toLowerCase());
     if(!u.isAnonymous&&!isAdmin){ toast("That Google account isn't the tournament admin."); await auth.signOut(); return; }
     if(isAdmin&&!was) toast("Signed in as admin");
     if(!isAdmin&&S.view==="admin") S.view="welcome";
-    render(); if(first){first=false;done();}
-  }); });
+    render();
+  });
   let chatFirst=true;
   db.collection("chat").orderBy("at","desc").limit(150).onSnapshot(s=>{
     const prevIds=new Set((S.chat||[]).map(x=>x.id));
