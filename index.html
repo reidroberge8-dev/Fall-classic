@@ -551,7 +551,7 @@ const teamPlayers=id=>S.players.filter(p=>p.teamId===id).sort((a,b)=>(Number(a.h
 const teamTotal=id=>teamPlayers(id).reduce((s,p)=>s+(Number(p.handicap)||0),0);
 const fmtTime=t=>{ if(!t) return ""; const [h,m]=t.split(":").map(Number); if(isNaN(h)) return t; return `${(h%12)||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`; };
 const byTee=(a,b)=>(a.teeTime||"99:99").localeCompare(b.teeTime||"99:99")||byName(a,b);
-const eventName=()=>S.event?.name||"Fairview Farm Fall Classic";
+const eventName=()=>{ const n=(S.event?.name||"Fall Classic").trim(); const m=n.match(/(Fall Classic|Classic|Invitational|Open|Championship)$/i); return m?m[1]:n; };
 
 let toastT;
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2400)}
