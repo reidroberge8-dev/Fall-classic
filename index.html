@@ -446,6 +446,9 @@ details.course:not([open]){gap:0}
 .hole-head .hole-facts span{display:inline-block;vertical-align:baseline;text-align:center;margin-left:14px}
 .hole-head .hole-facts span:first-child{margin-left:0}
 .hole-head .hole-facts b{display:block}
+.team-head{align-items:flex-start}
+.tee-top{display:flex;flex-direction:column;align-items:flex-end;font-family:var(--display);font-weight:700;font-size:20px;line-height:1.05;white-space:nowrap;flex:0 0 auto}
+.tee-top small{font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 /* ---- Mobile tuning ---- */
 @media (max-width:520px){
   .brand{font-size:0;flex:0 0 auto;width:30px;overflow:visible}
@@ -725,7 +728,7 @@ function teamCard(t,clickable){
   const rows=ps.map(p=>`<li><span class="name">${esc(p.name)}</span><span class="hcp num">${fmtH(p.handicap)}</span></li>`).join("")
     + Array.from({length:Math.max(0,4-ps.length)},()=>`<li><span class="open">Open spot</span><span></span></li>`).join("");
   return `<button type="button" class="team ${t.division==="ladies"?"ladies":""} ${S.teamId===t.id?"mine":""}" data-act="pick" data-id="${esc(t.id)}">
-    <div class="team-head"><div class="th-name"><h3>${esc(t.name)}</h3>${t.teeTime?`<span class="tee num">Tee time ${fmtTime(t.teeTime)}</span>`:""}</div>${S.teamId===t.id?`<span class="chip flag">Your team</span>`:`<span class="muted num" style="font-weight:600">HCP ${teamHcp(t.id)}</span>`}</div>
+    <div class="team-head"><div class="th-name"><h3>${esc(t.name)}</h3>${S.teamId===t.id?`<span class="chip flag" style="align-self:flex-start">Your team</span>`:""}</div>${t.teeTime?`<span class="tee-top num"><small>Tee time</small>${fmtTime(t.teeTime)}</span>`:""}</div>
     <ul class="roster">${rows}</ul></button>`;
 }
 
