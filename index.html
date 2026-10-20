@@ -547,6 +547,16 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
   .hole-head.trim .hole-facts small{display:block;text-box:trim-both cap alphabetic;line-height:1;font-size:inherit}
   .hole-head.trim .hole-facts{display:flex;gap:14px;align-items:flex-end}
 }
+/* trash can with a little hanging "TRASH" sign */
+.trashcan{position:relative;display:inline-block;width:20px;height:20px;vertical-align:middle;margin-right:2px}
+.trashcan .can{font-size:19px;line-height:20px;display:block;text-align:center}
+.trashcan .tsign{position:absolute;left:50%;top:58%;transform:translate(-50%,-50%) rotate(-8deg);
+  font-family:var(--body);font-size:5.5px;font-weight:900;letter-spacing:.02em;line-height:1;
+  background:#fff7d6;color:#1b1b1b;border:1px solid #1b1b1b;border-radius:1.5px;padding:1px 1.5px;white-space:nowrap;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.trashcan .tsign::before{content:"";position:absolute;left:50%;top:-3px;width:5px;height:3px;transform:translateX(-50%);
+  border:1px solid #1b1b1b;border-bottom:0;border-radius:3px 3px 0 0}
+.chatbtn>span:first-child{font-size:inherit}
+@media (max-width:400px){ .trashcan{width:18px;height:18px} .trashcan .can{font-size:17px;line-height:18px} .trashcan .tsign{font-size:5px} }
 </style>
 </head>
 <body>
@@ -557,7 +567,7 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
     <button class="brand" id="brand" type="button">Tournament</button>
     <button class="navbtn" id="navBoard" type="button" aria-pressed="false"><span class="bolt" aria-hidden="true">⚡</span> Live Leaderboard</button>
     <button class="navbtn" id="navRules" type="button" aria-pressed="false">Rules</button>
-    <button class="navbtn chatbtn" id="navChat" type="button" aria-label="Trash Talk chat"><span aria-hidden="true">🗑️</span> Talk<span class="dot" id="chatDot" hidden></span></button>
+    <button class="navbtn chatbtn" id="navChat" type="button" aria-label="Trash Talk chat"><span class="trashcan" aria-hidden="true"><span class="can">🗑️</span><span class="tsign">TRASH</span></span> Talk<span class="dot" id="chatDot" hidden></span></button>
   </div>
 </header>
 <main id="main"><div class="wrap" id="app">
