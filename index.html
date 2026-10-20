@@ -647,7 +647,7 @@ function vHome(){
 function payoutsPanel(d){
   const potRow=`<div class="payrow poker"><span class="place">3-Putt Poker pot</span><span class="amt num">$${d==="ladies"?40:40}</span><span class="per">+$1 per three-putt</span></div>`;
   return `  <section class="panel">
-    <h2>Payouts</h2>
+    <h2>${divName(d)} Division Payouts</h2>
     ${d==="ladies"?`<p class="note">No team payout for the ladies' Team Competition.</p>
       <div class="payrow"><span class="place">Lowest total putts</span><span class="amt num">$20</span><span class="per">Individual prize</span></div>
       <div class="payrow"><span class="place">Lowest net score</span><span class="amt num">$20</span><span class="per">Individual prize</span></div>
