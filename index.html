@@ -591,6 +591,10 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .hn-status{font-size:13px;font-weight:600;color:var(--muted)}
 .hn-status.done{color:var(--green)}
 .hn-facts{justify-content:center;gap:28px}
+.roster li.rh,.pick-card li.rh{border-top:0;padding:6px 0 2px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.pick-card li.rh span:last-child{font-weight:700}
+.roster li.rh+li{border-top:1px solid var(--line)}
+.pick-card li.rh+li{border-top:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -840,7 +844,7 @@ function teamCard(t,clickable){
     + Array.from({length:Math.max(0,4-ps.length)},()=>`<li><span class="open">Open spot</span><span></span></li>`).join("");
   return `<button type="button" class="team ${t.division==="ladies"?"ladies":""} ${S.teamId===t.id?"mine":""}" data-act="pick" data-id="${esc(t.id)}">
     <div class="team-head"><div class="th-name"><h3>${esc(t.name)}</h3>${S.teamId===t.id?`<span class="chip flag" style="align-self:flex-start">Your team</span>`:""}</div>${t.teeTime?`<span class="tee-top num"><small>Tee time</small>${fmtTime(t.teeTime)}</span>`:""}</div>
-    <ul class="roster">${rows}</ul></button>`;
+    <ul class="roster"><li class="rh" aria-hidden="true"><span>Golfer</span><span>HCP</span></li>${rows}</ul></button>`;
 }
 
 function vChoose(){
@@ -1445,7 +1449,7 @@ function openPick(id){
     <h2 id="pickTitle">Is this your team?</h2>
     <div class="pick-card">
       <div class="pick-head"><b>${esc(t.name)}</b>${t.teeTime?`<span class="num">Tee time ${fmtTime(t.teeTime)}</span>`:""}</div>
-      <ul>${ps.map(p=>`<li><span>${esc(p.name)}</span><span class="num">${fmtH(p.handicap)}</span></li>`).join("")||"<li><span class='muted'>No golfers yet</span></li>"}</ul>
+      <ul>${ps.length?'<li class="rh" aria-hidden="true"><span>Golfer</span><span>HCP</span></li>':""}${ps.map(p=>`<li><span>${esc(p.name)}</span><span class="num">${fmtH(p.handicap)}</span></li>`).join("")||"<li><span class='muted'>No golfers yet</span></li>"}</ul>
     </div>
     <button class="btn primary big-confirm" type="button" data-pact="confirm" data-id="${esc(id)}">Confirm &amp; start round</button>
     <button class="btn" type="button" data-pact="cancel">Pick a different team</button>`;
