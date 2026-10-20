@@ -564,6 +564,7 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .lb-row .tn-name{font-weight:700}
 .lb-row .sc-toggle{align-self:flex-start}
 .sc-cap b.n{color:var(--fg);font-weight:800}
+.shuffle-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
 </style>
 </head>
 <body>
@@ -1120,11 +1121,15 @@ function aPlayers(){
     <div class="row-actions">${ed?`<button class="btn" type="button" data-act="pcancel">Cancel</button>`:""}<button class="btn primary" type="submit">${ed?"Save golfer":"Add golfer"}</button></div>
   </form>${groups}`;
 }
+function anyScores(d){ return S.players.some(p=>p.division===d&&Object.keys(S.scores[p.id]?.h||{}).length); }
 function aTeams(){
   const groups=["men","ladies"].map(d=>{
     const ts=S.teams.filter(t=>t.division===d).sort(byTee);
     const free=S.players.filter(p=>p.division===d&&!S.teams.some(t=>t.id===p.teamId)).sort(byName);
     return `<section class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h2>${divName(d)} teams</h2><span class="muted num">${free.length} unassigned</span></div>
+    ${ts.length?`<div class="shuffle-row">${S.armed==="shuf-"+d?`<span class="note">Mix up all ${divName(d).toLowerCase()} golfers into new teams of four? Team names and tee times stay.${anyScores(d)?" <b>Scores already entered will move with each golfer.</b>":""}</span>
+      <span class="row-actions"><button class="btn sm" type="button" data-act="shufcancel">Cancel</button><button class="btn sm danger armed" type="button" data-act="shuffle" data-div="${d}">Yes, shuffle</button></span>`
+      :`<button class="btn sm" type="button" data-act="shuffle" data-div="${d}">🔀 Randomize ${divName(d).toLowerCase()} teams</button>`}</div>`:""}
     ${ts.length?ts.map(t=>{const ps=teamPlayers(t.id);return `<div class="admin-team">
       <div class="team-head" style="${d==="ladies"?"background:var(--ladies-soft)":""}">
         ${S.editTeam===t.id
@@ -1571,6 +1576,15 @@ app.addEventListener("click",async e=>{
   if(act==="tedit"){ S.editTeam=id; S.armed=null; render(); const i=document.getElementById("tRename"); if(i){i.focus(); i.select();} return; }
   if(act==="tcancel"){ S.editTeam=null; document.activeElement?.blur(); return render(); }
   if(act==="pedit-go"){ S.adminTab="players"; S.editPlayer=id; S.armed=null; render(); window.scrollTo(0,0); setTimeout(()=>document.getElementById("pName")?.focus(),50); return; }
+  if(act==="shufcancel"){ S.armed=null; return render(); }
+  if(act==="shuffle"){ const d=b.dataset.div; if(S.armed!=="shuf-"+d){S.armed="shuf-"+d;return render();} S.armed=null;
+    const ts=S.teams.filter(t=>t.division===d).sort(byTee);
+    const ps=S.players.filter(p=>p.division===d).map(p=>p.id);
+    for(let i=ps.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ps[i],ps[j]]=[ps[j],ps[i]];}
+    // deal round-robin so teams fill evenly, max four each; leftovers stay unassigned
+    const assign={}; ps.forEach((pid,i)=>{ const r=Math.floor(i/ts.length); assign[pid]=r<4?ts[i%ts.length].id:null; });
+    await write(async()=>{ const bt=db.batch(); for(const pid of ps) bt.set(db.doc("players/"+pid),{teamId:assign[pid]},{merge:true}); await bt.commit(); },
+      divName(d)+" teams shuffled"); return; }
   if(act==="tremove"){ await write(()=>db.doc("players/"+id).update({teamId:null}),"Removed from team"); return; }
   if(act==="tadd"){ const s=document.getElementById("add-"+id); const pid=s&&s.value; if(!pid) return toast("Pick a golfer first.");
     if(teamPlayers(id).length>=4) return toast("That team already has four golfers.");
