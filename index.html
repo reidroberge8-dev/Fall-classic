@@ -655,7 +655,7 @@ function vHome(){
     <p>Two games run at the same time during today's round.</p>
     <div class="game-list">
       <div><b>Team Competition</b><span>${d==="ladies"?"Teams of four playing a shamble: everyone tees off, the team picks the best drive, then each player plays her own ball in. Front 9: the team's best net score counts. Back 9: the best 2 net scores count.":"Teams of four, everyone plays their own ball. Front 9: the team's best net score counts. Back 9: the best 2 net scores count."}</span></div>
-      <div><b>3-Putt Poker</b><span>A putting side game. Putt everything out (no gimmes) and record every player's putts on each hole. Every 3-putt or worse costs that player $1 to the pot.</span></div>
+      <div><b>3-Putt Poker</b><span>Putt everything out (no gimmes) and record every player's putts on each hole. Every 3-putt or worse costs that player $1 to the pot.</span></div>
     </div>
     <div class="auto-card"><span aria-hidden="true">✅</span><b>Just enter scores and putts. The app does the rest!</b></div>
   </section>
@@ -692,13 +692,13 @@ function vRulesModal(){
     <button type="button" data-act="rdiv" data-div="men" aria-pressed="${d==="men"}">Men's</button>
     <button type="button" data-act="rdiv" data-div="ladies" aria-pressed="${d==="ladies"}">Ladies'</button></div>
   <section class="panel">
-    <div><div class="eyebrow">Main game</div><h2>Team Competition</h2></div>
+    <h2>Team Competition</h2>
     <ol class="rules">${list.map(r=>`<li><span>${esc(r).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</span></li>`).join("")}</ol>
     ${custom?"":`<p class="note">These are starter rules. ${isAdmin?"Edit them in Admin → Event &amp; rules.":"The tournament admin will post the final rules."}</p>`}
   </section>
 ${payoutsPanel(d)}
   <section class="panel">
-    <div><div class="eyebrow">Side game</div><h2>3-Putt Poker</h2></div>
+    <h2>3-Putt Poker</h2>
     <div class="payrow poker" style="border-top:0;margin-top:0"><span class="place">${divName(d)} starting pot</span><span class="amt num">$${d==="ladies"?40:40}</span><span class="per">Grows $1 with every three-putt</span></div>
     <ol class="rules">
       <li><span><b>Putt everything out</b> and record every player's number of putts on each hole.</span></li>
