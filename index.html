@@ -509,6 +509,18 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .navbtn{white-space:nowrap}
 @media (max-width:400px){ .bar-in{gap:6px} .navbtn{padding:6px 9px;font-size:13.5px} .chatbtn{padding:6px 9px} .chatbtn>span:first-child{font-size:13px} }
 @media (max-width:360px){ .navbtn{padding:6px 7px;font-size:12.5px} .brand::before{font-size:19px} .brand{width:24px} }
+/* Live Leaderboard button: broadcast-style red with a glowing "live" pulse */
+#navBoard,#navBoard[aria-pressed="true"]{position:relative;color:#fff;border:0;
+  background:linear-gradient(135deg,#ff4d4d 0%,#e01e37 55%,#a50d24 100%);
+  box-shadow:0 0 0 0 rgba(255,59,59,.6),inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.25);
+  text-shadow:0 1px 1px rgba(0,0,0,.25);font-weight:800;letter-spacing:.01em}
+#navBoard .bolt{filter:drop-shadow(0 0 4px rgba(255,214,0,.9))}
+@media (prefers-reduced-motion:no-preference){
+  #navBoard{animation:livePulse 2.2s ease-out infinite}
+  @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(255,59,59,.55),inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.25)}
+    70%{box-shadow:0 0 0 9px rgba(255,59,59,0),inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.25)}
+    100%{box-shadow:0 0 0 0 rgba(255,59,59,0),inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.25)}}
+}
 </style>
 </head>
 <body>
@@ -811,8 +823,7 @@ function vTeam(){
   let me=ls("me"); if(!ps.some(p=>p.id===me)) me=null;
   const head=`
   <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-    <button class="back" data-act="start" type="button">← All teams</button>
-    <button class="back" data-act="board" type="button"><span class="bolt" aria-hidden="true">⚡</span> Live Leaderboard →</button></div>
+    <button class="back" data-act="start" type="button">← All teams</button></div>
   <div class="team-top">
     <div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="chip ${t.division==="ladies"?"ladies":""}" style="align-self:flex-start">${divName(t.division)} division</span><h1>${esc(t.name)}</h1>${t.teeTime?`<span class="teebig num">Tee time <b>${fmtTime(t.teeTime)}</b></span>`:""}</div>
     <div class="topar num ${tot.thru?"":"idle"}"><b>${tot.thru?fmtPar(tot.toPar):"–"}</b><span>${tot.thru?`thru ${tot.thru}`:"not started"}</span></div>
