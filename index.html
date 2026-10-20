@@ -1133,9 +1133,28 @@ SFX.ace=(a,t)=>{ const dur=3.2, out=a.createGain(); out.connect(a.destination); 
   }
   // crowd roar shaped like an "ahh"
   const r=a.createBufferSource(), rg=a.createGain(); r.buffer=noiseBuf(a,dur); rg.gain.value=0.5; r.connect(rg); rg.connect(AH); r.start(t); r.stop(t+dur);
+  // standout "Wooo!" whoops (and a couple of "woo-hoo!"s): bright, up-swooping voices in the foreground
+  const WOO=vowel([[480,6,1],[1000,7,.5],[2600,9,.12]]);
+  for(let k=0;k<12;k++){ const st=t+0.15+Math.random()*2.0, dur=0.55+Math.random()*0.45, base=420+Math.random()*320, twice=k<2;
+    const o=a.createOscillator(), g=a.createGain(); o.setPeriodicWave(pulse);
+    o.frequency.setValueAtTime(base*0.75,st); o.frequency.exponentialRampToValueAtTime(base*1.45,st+0.18); o.frequency.exponentialRampToValueAtTime(base*1.05,st+dur);
+    if(twice){ o.frequency.setValueAtTime(base*0.9,st+dur+0.05); o.frequency.exponentialRampToValueAtTime(base*1.6,st+dur+0.2); o.frequency.exponentialRampToValueAtTime(base*1.2,st+dur+0.6); }
+    const v=a.createOscillator(), vd=a.createGain(); v.frequency.value=6+Math.random()*2; vd.gain.value=base*0.03; v.connect(vd); vd.connect(o.frequency);
+    const end=st+dur+(twice?0.65:0);
+    g.gain.setValueAtTime(0.0001,st); g.gain.exponentialRampToValueAtTime(0.11,st+0.06); g.gain.setValueAtTime(0.1,st+dur*0.6);
+    if(twice){ g.gain.exponentialRampToValueAtTime(0.02,st+dur+0.03); g.gain.exponentialRampToValueAtTime(0.11,st+dur+0.1); }
+    g.gain.exponentialRampToValueAtTime(0.0001,end);
+    o.connect(g); g.connect(WOO); [o,v].forEach(x=>{x.start(st); x.stop(end+0.05);}); }
+  // foreground claps: crisp, close hand claps, a few people clapping in rhythm
+  const fclap=noiseBuf(a,0.05);
+  for(let pplIdx=0;pplIdx<5;pplIdx++){ const rate=0.17+Math.random()*0.08, start=t+0.2+Math.random()*0.4, tone=1300+Math.random()*900;
+    for(let st=start; st<t+2.9; st+=rate*(0.9+Math.random()*0.2)){ const c=a.createBufferSource(), b=a.createBiquadFilter(), hp=a.createBiquadFilter(), cg=a.createGain();
+      c.buffer=fclap; b.type="bandpass"; b.frequency.value=tone; b.Q.value=1.8; hp.type="highpass"; hp.frequency.value=600;
+      cg.gain.setValueAtTime(0.32+Math.random()*0.18,st); cg.gain.exponentialRampToValueAtTime(0.0001,st+0.035);
+      c.connect(hp); hp.connect(b); b.connect(cg); cg.connect(bus); c.start(st); c.stop(st+0.05); } }
   // dense applause: hundreds of short claps with a hand-cupped resonance
   const clap=noiseBuf(a,0.03);
-  for(let k=0;k<260;k++){ const st=t+0.1+Math.pow(Math.random(),0.8)*2.8, c=a.createBufferSource(), b=a.createBiquadFilter(), cg=a.createGain();
+  for(let k=0;k<420;k++){ const st=t+0.1+Math.pow(Math.random(),0.8)*2.8, c=a.createBufferSource(), b=a.createBiquadFilter(), cg=a.createGain();
     c.buffer=clap; b.type="bandpass"; b.frequency.value=900+Math.random()*1800; b.Q.value=1.2+Math.random();
     cg.gain.setValueAtTime(0.05+Math.random()*0.1,st); cg.gain.exponentialRampToValueAtTime(0.0001,st+0.02+Math.random()*0.02);
     c.connect(b); b.connect(cg); cg.connect(bus); c.start(st); c.stop(st+0.04); }
