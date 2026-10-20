@@ -1,0 +1,1327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d5c3a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fall Classic">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Fairview Farm Fall Classic</title>
+<link rel="icon" type="image/svg+xml" href="images/icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+/* Layout: one-column mobile app; leaderboard-board header, scorecard-style rows below */
+:root{
+  --bg:#f3f5f1; --surface:#ffffff; --sunk:#e8ece4; --line:#d3dacd;
+  --fg:#18231c; --muted:#5a6a5f;
+  --green:#1d5c3a; --green-ink:#ffffff; --green-soft:#dcebdf;
+  --flag:#e3b51b; --flag-ink:#2a2200;
+  --ladies:#8a3a6a; --ladies-soft:#f2e1ea;
+  --danger:#b3261e; --mk:rgba(60,80,66,.45);
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#101612; --surface:#18201a; --sunk:#1f2a22; --line:#2e3b31;
+  --fg:#e7eee8; --muted:#97a69b;
+  --green:#3f9a67; --green-ink:#06140b; --green-soft:#1d3426;
+  --flag:#f0c63a; --flag-ink:#1c1600;
+  --ladies:#d986b6; --ladies-soft:#3a2231;
+  --danger:#ff8a80; --mk:rgba(190,205,194,.45); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101612; --surface:#18201a; --sunk:#1f2a22; --line:#2e3b31;
+  --fg:#e7eee8; --muted:#97a69b;
+  --green:#3f9a67; --green-ink:#06140b; --green-soft:#1d3426;
+  --flag:#f0c63a; --flag-ink:#1c1600;
+  --ladies:#d986b6; --ladies-soft:#3a2231;
+  --danger:#ff8a80; --mk:rgba(190,205,194,.45); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--green)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--flag);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--green);color:var(--green-ink);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px}
+.bar-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.brand{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.02em;text-transform:uppercase;line-height:1.1;flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:0;padding:0;text-align:left;cursor:pointer}
+.navbtn{background:transparent;border:1.5px solid currentColor;border-radius:999px;padding:4px 12px;font-weight:600;font-size:14px;cursor:pointer;color:inherit}
+#navBoard,.navbtn[aria-pressed="true"]{background:var(--flag);color:var(--flag-ink);border-color:var(--flag)}
+
+main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+
+h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.02em;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-size:44px;font-weight:700}
+h2{font-size:26px;font-weight:700}
+h3{font-size:20px;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+p{margin:0}
+.muted{color:var(--muted)}
+
+.hero{display:flex;flex-direction:column;gap:10px;padding-block:8px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-weight:600}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.rules{margin:0;padding:0;list-style:none;counter-reset:r;display:flex;flex-direction:column}
+.rules li{counter-increment:r;display:grid;grid-template-columns:34px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.rules li:first-child{border-top:0}
+.rules li::before{content:counter(r);font-family:var(--display);font-weight:700;font-size:20px;color:var(--green);line-height:1.3}
+.rules li span{min-width:0;overflow-wrap:anywhere}
+.note{font-size:14px;color:var(--muted)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);
+  padding:10px 16px;font-weight:600;cursor:pointer;min-height:44px}
+.btn:hover{border-color:var(--green)}
+.btn.primary{background:var(--green);color:var(--green-ink);border-color:var(--green)}
+.btn.big{font-family:var(--display);text-transform:uppercase;letter-spacing:.04em;font-size:24px;font-weight:700;padding:14px 20px;width:100%}
+.btn.danger{color:var(--danger)}
+.btn.danger.armed{background:var(--danger);color:var(--surface);border-color:var(--danger)}
+.btn.sm{min-height:34px;padding:4px 10px;font-size:14px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--sunk);border-radius:10px;padding:4px;gap:4px}
+.seg button{border:0;background:transparent;border-radius:7px;padding:10px;font-family:var(--display);font-weight:700;font-size:19px;
+  text-transform:uppercase;letter-spacing:.04em;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+
+.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.team{text-align:left;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:0;cursor:pointer;overflow:hidden;display:flex;flex-direction:column}
+.team:hover{border-color:var(--green)}
+.team.mine{border-color:var(--flag);box-shadow:0 0 0 2px var(--flag)}
+.team-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:12px 14px;background:var(--green-soft)}
+.team.ladies .team-head{background:var(--ladies-soft)}
+.team-head h3{min-width:0;overflow-wrap:anywhere}
+.roster{list-style:none;margin:0;padding:4px 14px 10px}
+.roster li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px dashed var(--line)}
+.roster li:first-child{border-top:0}
+.roster .name{min-width:0;overflow-wrap:anywhere}
+.roster .hcp{font-weight:700}
+.roster .open{color:var(--muted);font-style:italic}
+.chip{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--green);color:var(--green-ink);white-space:nowrap}
+.chip.ladies{background:var(--ladies);color:var(--surface)}
+.chip.flag{background:var(--flag);color:var(--flag-ink)}
+
+.card-table{width:100%;border-collapse:collapse}
+.card-table th{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:2px solid var(--fg)}
+.card-table td{padding:10px 8px;border-bottom:1px solid var(--line)}
+.card-table td.r,.card-table th.r{text-align:right}
+
+.empty{border:1.5px dashed var(--line);border-radius:10px;padding:22px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:6px;align-items:center}
+
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-weight:600;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select,.field textarea{background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:9px 10px;min-height:44px;width:100%}
+.field textarea{min-height:200px;resize:vertical;line-height:1.5}
+.field.wide{grid-column:1/-1}
+.row-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+.plist{list-style:none;margin:0;padding:0}
+.plist li{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.plist li:first-child{border-top:0}
+.plist .who{min-width:0}
+.plist .who b{display:block;overflow-wrap:anywhere}
+.plist .who small{color:var(--muted)}
+
+.admin-team{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.admin-team .team-head{align-items:center}
+.admin-team .body{padding:10px 14px;display:flex;flex-direction:column;gap:10px}
+.admin-team .members{list-style:none;margin:0;padding:0}
+.admin-team .members li{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:6px 0;border-top:1px dashed var(--line)}
+.admin-team .members li:first-child{border-top:0}
+.addrow{display:flex;gap:8px}
+.addrow select{flex:1;min-width:0;background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:8px;min-height:40px}
+
+details.course summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer}
+details.course summary::-webkit-details-marker{display:none}
+details.course summary>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+details.course .chev{font-size:20px;color:var(--muted);transition:transform .15s}
+details.course[open] .chev{transform:rotate(180deg)}
+details.course:not([open]){gap:0}
+.sc td,.sc th{padding:7px 6px;font-size:15px}
+.sc tr.tot td{background:var(--sunk);font-weight:700;border-bottom:1px solid var(--line)}
+.edit input{width:64px;background:var(--bg);border:1.5px solid var(--line);border-radius:6px;padding:6px;min-height:38px;text-align:center}
+.edit td{padding:5px 6px}
+.th-name{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tee{font-size:14px;font-weight:600;color:var(--muted)}
+.teebig{font-size:18px;color:var(--muted)}
+.teebig b{color:var(--fg);font-family:var(--display);font-size:26px;letter-spacing:.02em}
+.team-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.topar{display:flex;flex-direction:column;align-items:flex-end;flex:0 0 auto}
+.topar b{font-family:var(--display);font-size:52px;line-height:.9;color:var(--green)}
+.topar.idle b{color:var(--muted)}
+.topar span{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.who-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.who-chip{display:flex;flex-direction:column;align-items:flex-start;gap:0;text-align:left;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;cursor:pointer;min-width:0}
+.who-chip b{overflow-wrap:anywhere}
+.who-chip span{font-size:13px;color:var(--muted)}
+.who-chip[aria-pressed="true"]{border-color:var(--green);background:var(--green);color:var(--green-ink)}
+.who-chip[aria-pressed="true"] span{color:inherit;opacity:.85}
+.hs-row{display:grid;grid-template-columns:repeat(9,1fr);gap:4px}
+.hs{border:1.5px solid var(--line);background:var(--bg);border-radius:6px;padding:6px 0;font-weight:700;font-size:14px;cursor:pointer;font-variant-numeric:tabular-nums;min-width:0}
+.hs.done{background:var(--green-soft);border-color:var(--green-soft)}
+.hs.cur{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.hole-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.hole-facts{display:flex;gap:16px}
+.hole-facts span{display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hole-facts b{font-family:var(--display);font-size:30px;line-height:1;color:var(--fg);letter-spacing:0}
+.steppers{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stepper{display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--sunk);border-radius:12px;padding:12px 8px}
+.stepper .lbl{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.stepper .sub{font-size:14px;font-weight:600;color:var(--muted)}
+.sp{display:flex;align-items:center;gap:6px}
+.sp button{width:48px;height:48px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);font-size:26px;font-weight:600;cursor:pointer;line-height:1}
+.sp output{font-family:var(--display);font-weight:700;font-size:56px;line-height:1;min-width:58px;text-align:center}
+.sp output.under{color:var(--green)}
+.sp output.over{color:var(--danger)}
+.hole-team{list-style:none;margin:0;padding:0}
+.hole-team li{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:7px 8px;border-top:1px solid var(--line);border-radius:6px}
+.hole-team li:first-child{border-top:0}
+.hole-team li.counts{background:var(--green-soft)}
+.hole-team small{color:var(--muted)}
+.dots{color:var(--green);font-size:12px;vertical-align:super;margin-left:1px;letter-spacing:-1px}
+.dots.minus{color:var(--danger);letter-spacing:0}
+.scroll{overflow-x:auto;max-width:100%}
+.grid{border-collapse:collapse;width:100%;font-size:15px}
+.grid th,.grid td{padding:6px 4px;text-align:center;border-bottom:1px solid var(--line);min-width:30px}
+.grid thead th{font-size:12px;color:var(--muted);border-bottom:2px solid var(--fg)}
+.grid th[scope=row]{text-align:left;padding-left:2px;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis}
+.grid tr.par td,.grid tr.par th{color:var(--muted)}
+.grid td.cnt{background:var(--green-soft);font-weight:700}
+.grid .sum{font-weight:700;background:var(--sunk)}
+.grid tr.team-row th,.grid tr.team-row td{font-weight:700;border-top:2px solid var(--fg)}
+.netsup{font-size:.62em;font-weight:600;color:var(--muted);margin-left:1px;vertical-align:super;line-height:0}
+.grid td.cnt .netsup{color:var(--green)}
+.p1{color:var(--green)}.p2{color:var(--fg)}.p3{color:var(--danger)}
+.putt-grid td.p1,.putt-grid td.p3{font-weight:700}
+.sp output.p1{color:var(--green)}.sp output.p3{color:var(--danger)}
+.putts{list-style:none;margin:0;padding:0}
+.putts li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px dashed var(--line)}
+.putts li:first-child{border-top:0}
+.lb-grid{display:grid;grid-template-columns:26px minmax(0,1fr) 68px 48px 64px;gap:10px;align-items:center;padding:10px 6px}
+.lb-head{font-size:11px;font-weight:700;letter-spacing:.03em;line-height:1.2;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--fg);padding-block:6px}
+.lb-grid .r{text-align:right}
+.lb-row{border-bottom:1px solid var(--line)}
+.lb-row summary{list-style:none;cursor:pointer}
+.lb-row summary::-webkit-details-marker{display:none}
+.lb-row .tn{font-weight:600;overflow-wrap:anywhere;display:flex;flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.sc-toggle{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--green);white-space:nowrap}
+.lb-row .when-open{display:none}
+.lb-row[open] .when-open{display:inline}
+.lb-row[open] .when-closed{display:none}
+.lb-row .chev{color:var(--muted);font-size:14px;transition:transform .15s}
+.lb-row[open] .chev{transform:rotate(180deg)}
+.lb-row.mine>summary{background:var(--green-soft);border-radius:6px}
+.lb-body{padding:4px 0 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (max-width:400px){.lb-grid{grid-template-columns:22px minmax(0,1fr) 54px 42px 54px;gap:8px;font-size:15px}}
+.board td.tn{font-weight:600;overflow-wrap:anywhere}
+.board tr.mine td{background:var(--green-soft)}
+.sp output.blank{color:var(--muted);opacity:.6}
+.prow.todo{border-color:var(--line);border-style:dashed}
+.hs.part{border-color:var(--flag)}
+.prows{display:flex;flex-direction:column;gap:8px}
+.prow{display:grid;grid-template-columns:1fr auto auto;gap:8px 10px;align-items:center;background:var(--sunk);border-radius:10px;padding:10px;border:1.5px solid transparent}
+.prow.counts{border-color:var(--green);background:var(--green-soft)}
+.pname{display:flex;flex-direction:column;min-width:0}
+.pname b{overflow-wrap:anywhere}
+.pname span{font-size:13px;color:var(--muted)}
+.pname span b{color:var(--fg)}
+.mini{display:flex;flex-direction:column;align-items:center;gap:2px}
+.mini .lbl{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.sp.sm{gap:2px}
+.sp.sm button{width:36px;height:36px;font-size:20px}
+.sp.sm output{font-size:34px;min-width:34px}
+.prow{column-gap:22px}
+.prow .mini+.mini{border-left:2px solid var(--line);padding-left:20px}
+.prow .mini .lbl{margin-bottom:2px}
+.sc-cap{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:-6px}
+.sc-cap b{color:var(--green)}
+.hole-sum{font-weight:600;color:var(--muted)}
+.hole-sum b{color:var(--fg);font-size:18px}
+@media (max-width:420px){.prow{grid-template-columns:1fr 1fr}.pname{grid-column:1/-1}}
+.modal{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.modal[hidden]{display:none!important}
+.modal-back{position:absolute;inset:0;background:rgba(6,14,9,.55)}
+.sheet{position:relative;background:var(--bg);width:100%;max-width:760px;max-height:calc(100% - env(safe-area-inset-top,0px) - 24px);
+  border-radius:18px 18px 0 0;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,.3)}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.sheet-head h2{font-size:30px}
+.xbtn{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);font-size:20px;font-weight:700;cursor:pointer;flex:0 0 auto}
+.sheet-body{overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:16px;
+  padding:16px max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+@media (min-width:700px){.modal{align-items:center}.sheet{border-radius:18px;max-height:88%}}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:sheetUp .22s ease-out}}
+@keyframes sheetUp{from{transform:translateY(24px)}to{transform:none}}
+.game-list{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.game-list div{display:flex;flex-direction:column;gap:4px;background:var(--sunk);border-radius:8px;padding:12px;min-width:0}
+.game-list b{font-family:var(--display);font-size:20px;text-transform:uppercase;letter-spacing:.03em}
+.game-list span{font-size:15px;color:var(--muted)}
+@media (max-width:420px){.game-list{grid-template-columns:1fr}}
+.btn.big.oneline{white-space:nowrap;background:var(--flag);color:var(--flag-ink);border-color:var(--flag);border-radius:999px;box-shadow:0 4px 14px rgba(227,181,27,.45),0 2px 0 rgba(0,0,0,.12);font-size:26px;letter-spacing:.06em}
+.btn.big.oneline:hover{filter:brightness(1.06);border-color:var(--flag)}
+.btn.big.oneline:active{transform:translateY(1px);box-shadow:0 2px 6px rgba(227,181,27,.4)}
+.btn.big.oneline.x{white-space:nowrap;font-size:clamp(14px,4.3vw,24px);letter-spacing:.02em;padding-left:12px;padding-right:12px;overflow:hidden}
+.payrow{display:grid;grid-template-columns:1fr auto;grid-template-areas:"place amt" "per amt";gap:0 12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.payrow:first-of-type{border-top:0}
+.payrow .place{grid-area:place;font-weight:700}
+.payrow .per{grid-area:per;font-size:14px;color:var(--muted)}
+.payrow .amt{grid-area:amt;font-family:var(--display);font-weight:700;font-size:38px;line-height:1;color:var(--green)}
+.payrow.poker{border-top:2px solid var(--fg);margin-top:4px}
+.payrow.poker .amt{color:var(--fg)}
+.pot{border-radius:14px;padding:14px 16px;color:#f6efd8;
+  background:radial-gradient(130% 150% at 50% 0%,#2f7a4c 0%,#1d5a36 55%,#134028 100%);
+  border:2px solid #b88a3e;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+.pot-main{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pot-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pot-label{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:#e9c86a;min-width:0}
+.pot-suits{display:flex;gap:5px;font-size:15px;color:rgba(246,239,216,.6);flex:0 0 auto;font-family:"Segoe UI Symbol","Apple Symbols",system-ui,sans-serif}
+.pot-suits .r{color:rgba(255,140,140,.75)}
+.pot-amt{display:flex;align-items:center;gap:12px;font-family:var(--display);font-weight:700;font-size:56px;line-height:1.05;color:#fff;padding-block:2px}
+.chips{display:inline-flex;flex-direction:column;flex:0 0 auto}
+.chips i{display:block;width:28px;height:10px;border-radius:50%;background:#c62f2f;border:2px dashed rgba(255,255,255,.9);box-shadow:0 2px 0 #7a1717}
+.chips i+i{margin-top:-2px}
+.chips i:nth-child(2){background:#1f4fa8;box-shadow:0 2px 0 #10295a}
+.chips i:nth-child(1){background:#1b1b1b;box-shadow:0 2px 0 #000}
+.pot-sub{font-size:14px;font-weight:600;color:#d9e9dc}
+.star{color:var(--flag);font-size:16px;text-shadow:0 0 1px rgba(0,0,0,.35)}
+.owe{font-size:13px;font-weight:600;white-space:nowrap}
+.hands{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.hand-list{list-style:none;margin:0;padding:0;counter-reset:h;display:flex;flex-direction:column}
+.hand-list li{counter-increment:h;display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:8px;align-items:center;padding:5px 0;border-top:1px dashed var(--line)}
+.hand-list li:first-child{border-top:0}
+.hand-list li::before{content:counter(h);font-family:var(--display);font-weight:700;color:var(--muted);text-align:right}
+.hand-list .hn{font-weight:600;font-size:15px;min-width:0}
+.cards{display:flex;gap:2px}
+.pc{display:inline-block;min-width:27px;padding:2px 3px;text-align:center;font-size:12px;font-weight:700;background:#fff;color:#1b1b1b;border:1px solid #c9cfc6;border-radius:4px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.pc.red{color:#c0262d}
+.hcp-row{display:flex;gap:8px;align-items:center}
+.hcp-row input[type=number]{flex:1;min-width:0}
+.hcp-row input:disabled{opacity:.5}
+.field .tbd{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;white-space:nowrap;text-transform:none;letter-spacing:0;color:var(--fg);cursor:pointer}
+.field .tbd input{width:20px;height:20px;min-height:0;padding:0;accent-color:var(--green)}
+.reset-opts{display:flex;flex-direction:column;gap:8px}
+.ropt{display:flex;gap:10px;align-items:flex-start;padding:10px;border:1.5px solid var(--line);border-radius:8px;cursor:pointer}
+.ropt input{width:20px;height:20px;margin-top:2px;accent-color:var(--danger);flex:0 0 auto}
+.ropt span{display:flex;flex-direction:column;min-width:0}
+.ropt small{color:var(--muted);font-size:14px}
+.buyin{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--flag);border:2px solid var(--flag);border-radius:10px;overflow:hidden}
+.bi-item{background:var(--surface);display:flex;flex-direction:column;gap:4px;padding:14px 16px;min-width:0}
+.bi-item b{font-family:var(--display);font-size:44px;line-height:1;color:var(--fg)}
+.bi-item span{font-size:15px;color:var(--muted)}
+@media (max-width:420px){.buyin{grid-template-columns:1fr}}
+#navRules,#navRules[aria-pressed="true"]{background:transparent;color:var(--green-ink);border-color:var(--green-ink)}
+.foot{display:flex;justify-content:center;gap:14px;padding-block:8px 24px}
+.foot button{background:none;border:0;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;padding:6px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);
+  padding:10px 16px;border-radius:8px;font-weight:600;z-index:40;max-width:calc(100% - 32px)}
+.back{background:none;border:0;padding:0;color:var(--green);font-weight:700;cursor:pointer;align-self:flex-start}
+.stat{display:flex;gap:18px;flex-wrap:wrap}
+.stat div{display:flex;flex-direction:column}
+.stat b{font-family:var(--display);font-size:34px;line-height:1}
+@media (prefers-reduced-motion:no-preference){.team,.btn{transition:border-color .15s,background .15s}}
+
+/* Welcome: one deliberate photo-led look in both themes */
+:root{--w-ink:#ffffff;--w-sky1:#9cc3d6;--w-sky2:#e9d9b4;--w-far:#6f8f6a;--w-mid:#3f6b45;--w-near:#24492f;--w-shade:rgba(8,20,12,.72)}
+#welcome{position:relative;overflow:hidden;color:var(--w-ink);background:var(--w-near);
+  min-height:calc(100svh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column}
+#welcome .scene{position:absolute;inset:0;background:
+  radial-gradient(140% 60% at 20% 100%,var(--w-near) 49%,transparent 50%),
+  radial-gradient(120% 55% at 85% 100%,var(--w-mid) 49%,transparent 50%),
+  radial-gradient(160% 50% at 50% 92%,var(--w-far) 49%,transparent 50%),
+  linear-gradient(180deg,var(--w-sky1) 0%,var(--w-sky2) 70%)}
+#welcome .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;max-width:none}
+#welcome .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,20,12,.35) 0%,rgba(8,20,12,.05) 35%,var(--w-shade) 78%)}
+#welcome .flag{position:absolute;right:18%;bottom:30%;width:42px;height:auto}
+#welcome .content{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:24px;
+  padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));padding-block:40px 36px}
+.logo{width:112px;height:112px;border-radius:50%;object-fit:contain;background:#fff;padding:8px;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+.crest{width:104px;height:104px;border-radius:50%;border:2px solid var(--w-ink);display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:40px;letter-spacing:.04em;background:rgba(255,255,255,.08)}
+.w-title{display:flex;flex-direction:column;gap:6px;max-width:560px;text-shadow:0 2px 14px rgba(0,0,0,.35)}
+.w-title .k{font-size:14px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;opacity:.9}
+.w-title h1{font-size:clamp(46px,13vw,84px);line-height:.92}
+.w-title .d{font-weight:600;font-size:17px;opacity:.95}
+.w-bottom{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:420px}
+.play{width:100%;border:0;border-radius:999px;background:var(--flag);color:var(--flag-ink);font-family:var(--display);font-weight:700;font-size:30px;
+  letter-spacing:.08em;text-transform:uppercase;padding:16px 24px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.play:active{transform:translateY(1px)}
+.divbtn{width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;border:2px solid var(--w-ink);border-radius:16px;background:rgba(255,255,255,.1);
+  color:var(--w-ink);font-family:var(--display);font-weight:700;font-size:40px;letter-spacing:.06em;text-transform:uppercase;padding:22px 20px;cursor:pointer;
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.divbtn small{font-family:var(--body);font-size:15px;font-weight:600;letter-spacing:.04em;text-transform:none;opacity:.9}
+.divbtn:hover,.divbtn:focus-visible{background:var(--flag);color:var(--flag-ink);border-color:var(--flag)}
+.w-admin{background:none;border:0;color:var(--w-ink);opacity:.8;font-weight:600;text-decoration:underline;cursor:pointer;padding:6px}
+@media (prefers-reduced-motion:no-preference){#welcome .content>*{animation:rise .6s ease-out both}#welcome .w-title{animation-delay:.08s}#welcome .w-bottom{animation-delay:.16s}}
+@keyframes rise{from{transform:translateY(10px)}to{transform:none}}
+.photo-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.photo-slot{display:flex;flex-direction:column;gap:8px;min-width:0}
+.photo-slot .pv{aspect-ratio:16/10;max-width:100%;border-radius:8px;background:var(--sunk);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden;color:var(--muted);font-size:14px}
+.photo-slot .pv img{width:100%;height:100%;object-fit:cover}
+.photo-slot .pv.logo-pv img{object-fit:contain;background:#fff}
+.photo-slot input[type=file]{font-size:14px;max-width:100%}
+
+/* ---- Scorecard marks: birdie circle, eagle double circle, bogey square, double bogey double square, triple+ crossed square ---- */
+.mk{display:inline-grid;place-items:center;width:21px;height:21px;line-height:1;box-sizing:border-box;vertical-align:middle}
+.mk.bd,.mk.eg{border:1.5px solid var(--mk);border-radius:50%}
+.mk.eg{outline:1.5px solid var(--mk);outline-offset:1.5px}
+.mk.bg,.mk.db,.mk.tb{border:1.5px solid var(--mk);border-radius:1px}
+.mk.db{outline:1.5px solid var(--mk);outline-offset:1.5px}
+.mk.tb{background:linear-gradient(to top right,transparent calc(50% - .8px),var(--mk) calc(50% - .8px),var(--mk) calc(50% + .8px),transparent calc(50% + .8px))}
+.grid td{min-width:30px}
+.sc-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);align-items:center}
+.sc-legend span{display:inline-flex;align-items:center;gap:5px}
+.sc-legend .mk{width:17px;height:17px;font-size:10px}
+.bolt{display:inline-block;font-size:.95em;line-height:1}
+@media (prefers-reduced-motion:no-preference){.sheet-head .bolt{animation:zap 2.4s ease-in-out infinite}}
+@keyframes zap{0%,80%,100%{opacity:1}85%{opacity:.35}90%{opacity:1}95%{opacity:.5}}
+.chatbtn{position:relative;padding:6px 12px;font-size:17px;line-height:1}
+.chatbtn .dot{position:absolute;top:2px;right:2px;width:11px;height:11px;border-radius:50%;background:#e5383b;border:2px solid var(--green)}
+.chat-sheet{height:calc(100% - env(safe-area-inset-top,0px) - 24px)}
+.chat-body{flex:1;gap:10px;background:var(--bg)}
+.msg{display:flex;flex-direction:column;gap:3px;max-width:85%;align-self:flex-start}
+.msg.mine{align-self:flex-end;align-items:flex-end}
+.msg .who{font-size:13px;font-weight:700;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.msg .who span{font-weight:500;color:var(--muted)}
+.msg time{font-size:11px;color:var(--muted);font-weight:500}
+.bubble{background:var(--surface);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:9px 12px;font-size:16px;overflow-wrap:anywhere;white-space:pre-wrap}
+.msg.mine .bubble{background:var(--green);color:var(--green-ink);border-color:var(--green);border-radius:14px 14px 4px 14px}
+.msg.auto{align-self:center;flex-direction:row;align-items:center;gap:8px;max-width:95%;background:var(--sunk);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600}
+.mdel{background:none;border:0;color:var(--muted);font-size:15px;cursor:pointer;padding:0 4px;min-height:24px}
+.mdel.armed{color:var(--danger);font-weight:700;font-size:12px}
+.composer{border-top:1px solid var(--line);background:var(--surface);padding:8px max(12px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px}
+.composer .as{font-size:13px;color:var(--muted)}
+.composer .as b{color:var(--fg)}
+.linkbtn{background:none;border:0;color:var(--green);font-weight:700;text-decoration:underline;cursor:pointer;padding:4px;font-size:13px}
+.crow{display:flex;gap:8px}
+.crow input{flex:1;min-width:0;font-size:16px;border:1.5px solid var(--line);border-radius:999px;padding:10px 14px;background:var(--bg);min-height:46px}
+.crow .btn{border-radius:999px;min-height:46px;padding:0 18px}
+.pick-wrap{display:flex;flex-direction:column;gap:12px}
+.pick-team{display:flex;flex-direction:column;gap:6px}
+.pick-row{display:flex;flex-wrap:wrap;gap:8px}
+.pick{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:10px 16px;font-weight:600;cursor:pointer;min-height:44px}
+.pick:active{background:var(--green);color:var(--green-ink)}
+.lb-head span{min-width:0;overflow-wrap:normal}
+/* ---- Mobile tuning ---- */
+html{-webkit-text-size-adjust:100%}
+button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.navbtn{min-height:40px;padding:6px 14px;font-size:15px}
+.bar-in{gap:8px}
+.back{padding:8px 0;min-height:40px}
+.btn.sm{min-height:40px;padding:6px 12px}
+.tabs button{min-height:40px;padding:8px 14px}
+.hs{padding:11px 0;font-size:15px}
+.sp.sm button{width:44px;height:44px;font-size:22px}
+.sp.sm output{min-width:38px}
+.save-bar{position:sticky;bottom:0;z-index:4;background:var(--surface);margin:0 -18px -18px;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);border-radius:0 0 10px 10px}
+.save-bar .btn{min-height:52px;font-size:17px}
+.toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.thru-sm{display:block;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.lb-row summary{padding-block:12px}
+.grid{font-size:14px}
+.grid th,.grid td{min-width:30px;padding:7px 2px}
+.grid th[scope=row]{max-width:72px}
+.field input,.field select,.field textarea,.addrow select{font-size:16px}
+@media (max-width:420px){
+  h1{font-size:38px}
+  .brand{font-size:0;flex:0 0 auto;width:30px;overflow:visible}
+  .brand::before{content:"⛳";font-size:22px}
+  .bar-in{justify-content:space-between}
+  .navbtn{padding:6px 11px;font-size:14px}
+  .prow{padding:12px}
+  .prow .mini+.mini{padding-left:14px}
+  .hole-facts{gap:12px}
+  .hole-facts b{font-size:26px}
+  .payrow .amt{font-size:32px}
+  .bi-item b{font-size:38px}
+  .sheet-head h2{font-size:26px}
+  .card-table th,.card-table td{padding:8px 5px}
+}
+</style>
+</head>
+<body>
+
+<section id="welcome" hidden></section>
+<header class="bar">
+  <div class="bar-in">
+    <button class="brand" id="brand" type="button">Tournament</button>
+    <button class="navbtn" id="navBoard" type="button" aria-pressed="false"><span class="bolt" aria-hidden="true">⚡</span> Live Leaderboard</button>
+    <button class="navbtn" id="navRules" type="button" aria-pressed="false">Rules</button>
+    <button class="navbtn chatbtn" id="navChat" type="button" aria-label="Chat"><span aria-hidden="true">💬</span><span class="dot" id="chatDot" hidden></span></button>
+  </div>
+</header>
+<main id="main"><div class="wrap" id="app">
+  <div class="empty"><b>Loading the tournament…</b></div>
+</div>
+<footer class="foot" id="foot"><button type="button" id="footAdmin">Tournament admin</button><button type="button" id="footSignIn">Admin sign-in</button><button type="button" id="footSignOut">Sign out</button></footer></main>
+<div class="modal" id="chatModal" hidden>
+  <div class="modal-back" data-mact="close"></div>
+  <div class="sheet chat-sheet" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
+    <div class="sheet-head"><h2 id="chatTitle">💬 Trash Talk</h2><button class="xbtn" type="button" data-mact="close" aria-label="Close chat">✕</button></div>
+    <div class="sheet-body chat-body" id="chatBody"></div>
+    <form class="composer" id="chatForm" autocomplete="off">
+      <div class="as" id="chatAs"></div>
+      <div class="crow"><input id="chatInput" type="text" maxlength="280" placeholder="Say something…" enterkeyhint="send"><button class="btn primary" type="submit" id="chatSend">Send</button></div>
+    </form>
+  </div>
+</div>
+<div class="modal" id="rulesModal" hidden>
+  <div class="modal-back" data-mact="close"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+    <div class="sheet-head"><h2 id="rulesTitle">Rules of Play</h2><button class="xbtn" type="button" data-mact="close" aria-label="Close rules">✕</button></div>
+    <div class="sheet-body" id="rulesBody"></div>
+  </div>
+</div>
+<div class="modal" id="lbModal" hidden>
+  <div class="modal-back" data-mact="close"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="lbTitle">
+    <div class="sheet-head"><h2 id="lbTitle"><span class="bolt" aria-hidden="true">⚡</span> Live Leaderboard</h2><button class="xbtn" type="button" data-mact="close" aria-label="Close leaderboard">✕</button></div>
+    <div class="sheet-body" id="lbBody"></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDInvsHioe-77_DAh8NyEAjMC1eYcF95so",
+  authDomain: "fall-classic-daa7a.firebaseapp.com",
+  projectId: "fall-classic-daa7a",
+  storageBucket: "fall-classic-daa7a.firebasestorage.app",
+  messagingSenderId: "526967710619",
+  appId: "1:526967710619:web:a32659bdecb7249e98373e"
+};
+const ADMIN_EMAILS = ["reidroberge8@gmail.com"];
+const DEFAULT_RULES = [
+  "Teams of four golfers play in either the Men's or the Ladies' division.",
+  "Handicaps are set by the tournament committee and can't be changed on the course.",
+  "One golfer per team keeps live score on this app, hole by hole.",
+  "Play ready golf and keep pace with the group ahead."
+];
+const S = { openTeams:new Set(), players:[], teams:[], scores:{}, event:null, course:null, hole:1, draft:null, boardDiv:null, view:"welcome", div:"men", adminTab:"event", teamId:null, editPlayer:null, armed:null, loaded:{p:false,t:false,e:false} };
+let db=null, isAdmin=false, assets=true, myUid=null, authUser=null;
+const heroSrc=()=>S.hero?.data||"images/hero.jpg", logoSrc=()=>S.logo?.data||"images/logo.gif";
+const app=document.getElementById("app");
+
+function ls(k,v){try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v);}catch(e){return null}}
+S.teamId = ls("myTeam");
+S.div = ls("myDiv") || "men";
+
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtH=h=>{ if(h===null||h===undefined||h==="") return "TBD"; const n=Number(h); if(isNaN(n)) return "TBD"; return n<0? "+"+(-n) : String(n); };
+const teamHcp=id=>teamPlayers(id).some(p=>p.handicap==null||p.handicap==="")?"TBD":fmtH(teamTotal(id));
+const divName=d=>d==="ladies"?"Ladies'":"Men's";
+const byName=(a,b)=>(a.name||"").localeCompare(b.name||"");
+const teamPlayers=id=>S.players.filter(p=>p.teamId===id).sort((a,b)=>(Number(a.handicap)||0)-(Number(b.handicap)||0));
+const teamTotal=id=>teamPlayers(id).reduce((s,p)=>s+(Number(p.handicap)||0),0);
+const fmtTime=t=>{ if(!t) return ""; const [h,m]=t.split(":").map(Number); if(isNaN(h)) return t; return `${(h%12)||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`; };
+const byTee=(a,b)=>(a.teeTime||"99:99").localeCompare(b.teeTime||"99:99")||byName(a,b);
+const eventName=()=>S.event?.name||"Fairview Farm Fall Classic";
+
+let toastT;
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2400)}
+async function write(fn,ok){try{await fn(); if(ok) toast(ok);}catch(e){toast(e?.code==="permission-denied"?"Only the tournament admin can change this.":"Couldn't save. Check your connection and try again.");}}
+
+/* ---------- views ---------- */
+function rulesFor(div){
+  const ev=S.event||{};
+  const raw=(div==="ladies"?ev.rulesLadies:ev.rulesMen)||ev.rules||"";
+  const custom=raw.split("\n").map(s=>s.replace(/^\s*[-•*\d.)]+\s*/,"").trim()).filter(Boolean);
+  if(custom.length) return {list:custom,custom:true};
+  const tee=(div==="ladies"?ev.ladiesTee||"Red":ev.menTee||"White");
+  return {list:[`${divName(div)} division plays from the ${tee} tees.`,
+    div==="ladies"
+      ? "**Shamble:** all four players tee off, the team picks the best drive, and each player plays her own ball in from there."
+      : "Everyone plays their own ball from tee to green.",
+    "Record every player's score and number of putts on each hole.",
+    "Front 9: the team's **single lowest** net score on each hole counts as the team score.",
+    "Back 9: the team's **two lowest** net scores on each hole count as the team score.",
+    "Net score is your gross score minus your handicap strokes on that hole.",
+    "**Out of bounds** is played as a lateral hazard: drop within **two club lengths** of where the ball crossed the line, with a **one-stroke penalty**.",...DEFAULT_RULES.slice(3)],custom:false};
+}
+function vHome(){
+  const ev=S.event||{}, d=S.div;
+  const meta=[ev.date&&`<span>${esc(fmtDate(ev.date))}</span>`, ev.course&&`<span>${esc(ev.course)}</span>`, ev.format&&`<span>${esc(ev.format)}</span>`].filter(Boolean).join("");
+  return `
+  <button class="back" data-act="division" type="button">← Division</button>
+  <button class="btn primary big oneline" data-act="start" type="button">Click here to start round</button>
+  <section class="hero">
+    <span class="chip ${d==="ladies"?"ladies":""}" style="align-self:flex-start">${divName(d)} division</span>
+    <h1>Today's games</h1>
+    ${meta?`<div class="meta">${meta}</div>`:""}
+  </section>
+  ${ev.welcome?`<p>${esc(ev.welcome)}</p>`:""}
+  <section class="panel games">
+    <h2>Two games, one round</h2>
+    <p>Two games run at the same time during today's round.</p>
+    <div class="game-list">
+      <div><b>1 · Team Game</b><span>${d==="ladies"?"Teams of four. Your team's net scores on each hole make up the team score on the Live Leaderboard.":"Teams of four. All players play their own ball. The best net scores count toward the team score, tracked on the Live Leaderboard."}</span></div>
+      <div><b>2 · 3-Putt Poker</b><span>A side game based on putting. Be sure to putt everything out, no gimmes, and record each player's putts on every hole.</span></div>
+    </div>
+  </section>
+  <section class="buyin">
+    <div class="bi-item"><b class="num">$10</b><span>Buy-in per player at the start of the round.</span></div>
+    <div class="bi-item"><b class="num">+$1</b><span>Per three-putt or worse, added to the pot.</span></div>
+  </section>
+  ${payoutsPanel(d)}
+  <button class="btn primary big oneline" data-act="start" type="button">Click here to start round</button>`;
+}
+
+function payoutsPanel(d){
+  const potRow=`<div class="payrow poker"><span class="place">3-Putt Poker pot</span><span class="amt num">$${d==="ladies"?40:40}</span><span class="per">+$1 per three-putt</span></div>`;
+  return `  <section class="panel">
+    <h2>Payouts</h2>
+    ${d==="ladies"?`<p class="note">No team payout for the ladies' Team Game.</p>
+      <div class="payrow"><span class="place">Lowest total putts</span><span class="amt num">$20</span><span class="per">Individual prize</span></div>
+      <div class="payrow"><span class="place">Lowest net score</span><span class="amt num">$20</span><span class="per">Individual prize</span></div>
+      ${potRow}
+      <p class="note">Individual prizes go to one golfer each. Ties split the prize.</p>`
+    :`<div class="payrow"><span class="place">1st place team</span><span class="amt num">$80</span><span class="per num">$20 per player</span></div>
+      <div class="payrow"><span class="place">Most 1-putts</span><span class="amt num">$20</span><span class="per">Individual prize</span></div>
+      <div class="payrow"><span class="place">Lowest net score</span><span class="amt num">$20</span><span class="per">Individual prize</span></div>
+      ${potRow}
+      <p class="note">Individual prizes go to one golfer each. Ties split the prize.</p>`}
+  </section>
+`;
+}
+function vRulesModal(){
+  const d=S.rulesDiv||S.div, ev=S.event||{};
+  const {list,custom}=rulesFor(d);
+  return `<div class="seg" role="group" aria-label="Division">
+    <button type="button" data-act="rdiv" data-div="men" aria-pressed="${d==="men"}">Men's</button>
+    <button type="button" data-act="rdiv" data-div="ladies" aria-pressed="${d==="ladies"}">Ladies'</button></div>
+  <section class="panel">
+    <div><div class="eyebrow">Main game</div><h2>Team Game</h2></div>
+    <ol class="rules">${list.map(r=>`<li><span>${esc(r).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</span></li>`).join("")}</ol>
+    ${custom?"":`<p class="note">These are starter rules. ${isAdmin?"Edit them in Admin → Event &amp; rules.":"The tournament admin will post the final rules."}</p>`}
+  </section>
+${payoutsPanel(d)}
+  <section class="panel">
+    <div><div class="eyebrow">Side game</div><h2>3-Putt Poker</h2></div>
+    <div class="payrow poker" style="border-top:0;margin-top:0"><span class="place">${divName(d)} starting pot</span><span class="amt num">$${d==="ladies"?40:40}</span><span class="per">Grows $1 with every three-putt</span></div>
+    <ol class="rules">
+      <li><span><b>Putt everything out</b> and record every player's number of putts on each hole.</span></li>
+      <li><span>Only strokes taken <b>on the green</b> count as putts. Putting from the fringe or fairway doesn't count.</span></li>
+      <li><span>Each player starts the round with <b>two cards</b>.</span></li>
+      <li><span>Every <b>one-putt</b> earns that player <b>one more card</b>.</span></li>
+      <li><span>Every <b>three-putt or worse</b>, the player owes <b>$1</b> to the pot.</span></li>
+      <li><span>After the round, each player makes their <b>best five-card poker hand</b> from the cards they earned. The best hand wins the pot.</span></li>
+    </ol>
+    ${handRanks()}
+  </section>
+`;
+}
+function handRanks(){
+  const H=[["Royal flush","A♠ K♠ Q♠ J♠ 10♠"],["Straight flush","9♥ 8♥ 7♥ 6♥ 5♥"],["Four of a kind","Q♣ Q♦ Q♥ Q♠ 4♦"],["Full house","K♠ K♥ K♦ 7♣ 7♠"],
+    ["Flush","A♦ J♦ 8♦ 5♦ 2♦"],["Straight","8♣ 7♦ 6♠ 5♥ 4♣"],["Three of a kind","7♠ 7♥ 7♦ K♣ 2♠"],["Two pair","J♥ J♣ 4♠ 4♦ 9♣"],["One pair","10♠ 10♥ A♦ 6♣ 3♠"],["High card","A♣ J♦ 8♠ 5♥ 3♣"]];
+  const card=c=>`<span class="pc ${/[♥♦]/.test(c)?"red":""}">${c}</span>`;
+  return `<div class="hands"><div class="eyebrow">Poker hands, best to worst</div>
+    <ol class="hand-list">${H.map(([n,cs])=>`<li><span class="hn">${n}</span><span class="cards" aria-label="${n} example">${cs.split(" ").map(card).join("")}</span></li>`).join("")}</ol></div>`;
+}
+function vWelcome(){
+  const ev=S.event||{};
+  const name=eventName();
+  const m=name.match(/^(.*?)\s*(Fall Classic|Classic|Invitational|Open|Championship)$/i);
+  const top=m?m[1]:"", big=m?m[2]:name;
+  const flag=`<svg class="flag" viewBox="0 0 42 120" aria-hidden="true"><rect x="4" y="6" width="3" height="112" fill="#f4f1e6"/><path d="M7 6 L40 18 L7 30 Z" fill="#e3b51b"/><ellipse cx="6" cy="117" rx="9" ry="3" fill="rgba(0,0,0,.25)"/></svg>`;
+  return `${!S.hero?.off?`<img class="photo" src="${esc(heroSrc())}" alt="" onerror="this.remove()">`:`<div class="scene"></div>${flag}`}
+  <div class="shade"></div>
+  <div class="content">
+    ${!S.logo?.off?`<img class="logo" src="${esc(logoSrc())}" alt="Fairview Farm Golf Course logo">`:`<div class="crest" aria-hidden="true">FF</div>`}
+    <div class="w-title">
+      ${top?`<span class="k">${esc(top)}</span>`:""}
+      <h1>${esc(big)}</h1>
+      ${ev.date?`<span class="d">${esc(fmtDate(ev.date))}</span>`:""}
+      <span class="d">${fmtTime(ev.startTime||"10:00")} start</span>
+    </div>
+    <div class="w-bottom">
+      <button class="play" type="button" data-act="rules">Play now</button>
+      ${isAdmin?`<button class="w-admin" type="button" data-act="admin">Tournament admin</button>`:`<button class="w-admin w-signin" type="button" data-act="signin">Admin sign-in</button>`}
+    </div>
+  </div>`;
+}
+function vDivision(){
+  const ev=S.event||{};
+  return `${!S.hero?.off?`<img class="photo" src="${esc(heroSrc())}" alt="" onerror="this.remove()">`:`<div class="scene"></div>`}
+  <div class="shade" style="background:rgba(8,20,12,.55)"></div>
+  <div class="content" style="justify-content:center;gap:36px">
+    <button class="w-admin" type="button" data-act="welcome" style="position:absolute;top:16px;left:max(16px,env(safe-area-inset-left,0px));text-decoration:none">← Back</button>
+    <div class="w-title"><span class="k">${esc(eventName())}</span><h1 style="font-size:clamp(40px,11vw,64px)">Choose your division</h1></div>
+    <div class="w-bottom" style="gap:16px">
+      <button class="divbtn" type="button" data-act="pickdiv" data-div="men">Men's<small>${esc((ev.menTee||"White"))} tees</small></button>
+      <button class="divbtn" type="button" data-act="pickdiv" data-div="ladies">Ladies'<small>${esc((ev.ladiesTee||"Red"))} tees</small></button>
+    </div>
+  </div>`;
+}
+function teeFor(div){const c=S.course;if(!c?.tees?.length)return null;const want=(S.event||{})[div==="ladies"?"ladiesTee":"menTee"]||(div==="ladies"?"Red":"White");return c.tees.find(t=>t.name===want)||c.tees[0];}
+function vCourse(div){
+  const c=S.course; if(!c?.holes?.length) return "";
+  const t=teeFor(div), k=div==="ladies"?"hcpL":"hcpM";
+  const sum=(a,b,f)=>c.holes.slice(a,b).reduce((s,h)=>s+(Number(f(h))||0),0);
+  const row=h=>`<tr><td><b>${h.n}</b></td><td class="r">${t?.yards?.[h.n-1]??"–"}</td><td class="r">${h.par}</td><td class="r">${h[k]??"–"}</td></tr>`;
+  const tot=(lbl,a,b)=>`<tr class="tot"><td>${lbl}</td><td class="r">${t?sum(a,b,h=>t.yards?.[h.n-1]):""}</td><td class="r">${sum(a,b,h=>h.par)}</td><td></td></tr>`;
+  return `<details class="panel course" id="courseCard" ${S.courseOpen?"open":""}>
+    <summary><div><h2>${t?esc(t.name)+" tee scorecard":"Scorecard"}</h2><span class="muted">${esc(c.name||"")} · Par ${sum(0,18,h=>h.par)}${t?` · ${t.rating??"–"} / ${t.slope??"–"}`:""}</span></div><span class="chev" aria-hidden="true">▾</span></summary>
+    <div style="overflow-x:auto"><table class="card-table num sc">
+      <thead><tr><th>Hole</th><th class="r">Yds</th><th class="r">Par</th><th class="r">HCP</th></tr></thead>
+      <tbody>${c.holes.slice(0,9).map(row).join("")}${tot("Out",0,9)}${c.holes.slice(9).map(row).join("")}${tot("In",9,18)}${tot("Total",0,18)}</tbody>
+    </table></div>
+    <p class="note">Rating / slope shown above. HCP is the hole's stroke index (1 = hardest).</p>
+  </details>`;
+}
+function teamCard(t,clickable){
+  const ps=teamPlayers(t.id);
+  const rows=ps.map(p=>`<li><span class="name">${esc(p.name)}</span><span class="hcp num">${fmtH(p.handicap)}</span></li>`).join("")
+    + Array.from({length:Math.max(0,4-ps.length)},()=>`<li><span class="open">Open spot</span><span></span></li>`).join("");
+  return `<button type="button" class="team ${t.division==="ladies"?"ladies":""} ${S.teamId===t.id?"mine":""}" data-act="pick" data-id="${esc(t.id)}">
+    <div class="team-head"><div class="th-name"><h3>${esc(t.name)}</h3>${t.teeTime?`<span class="tee num">Tee time ${fmtTime(t.teeTime)}</span>`:""}</div>${S.teamId===t.id?`<span class="chip flag">Your team</span>`:`<span class="muted num" style="font-weight:600">HCP ${teamHcp(t.id)}</span>`}</div>
+    <ul class="roster">${rows}</ul></button>`;
+}
+
+function vChoose(){
+  const teams=S.teams.filter(t=>t.division===S.div).sort(byTee);
+  return `
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+    <button class="back" data-act="home" type="button">← Rules</button>
+  </div>
+  <div><div class="eyebrow">${divName(S.div)} division</div><h1>Choose your team</h1></div>
+  ${teams.length?`<div class="teams">${teams.map(t=>teamCard(t)).join("")}</div>`
+   :`<div class="empty"><b>No ${divName(S.div)} teams yet</b><span>${isAdmin?"Add teams in Admin → Teams.":"Teams appear here as soon as the tournament admin posts them."}</span></div>`}`;
+}
+
+/* ---------- scoring ---------- */
+const hole=n=>S.course?.holes?.[n-1];
+const hcpKey=div=>div==="ladies"?"hcpL":"hcpM";
+function strokes(p,n){
+  const H=Math.round(Number(p.handicap)||0), hh=hole(n); if(!hh) return 0;
+  const idx=Number(hh[hcpKey(p.division)])||18;
+  if(H>=0) return Math.floor(H/18)+((idx<=H%18)?1:0);
+  const a=Math.min(18,-H); return idx>18-a?-1:0;
+}
+const entry=(pid,n)=>{const e=S.scores[pid]?.h?.[n]; return e&&e.s?e:null;};
+const net=(p,n)=>{const e=entry(p.id,n); return e?e.s-strokes(p,n):null;};
+const counts=n=>n<=9?1:2;
+function teamHole(t,n){
+  const ps=teamPlayers(t.id); if(!ps.length) return null;
+  const nets=ps.map(p=>({id:p.id,v:net(p,n)}));
+  if(nets.some(x=>x.v===null)) return null;
+  const k=Math.min(counts(n),ps.length);
+  const best=[...nets].sort((a,b)=>a.v-b.v).slice(0,k);
+  const par=(hole(n)?.par||0)*k;
+  return {score:best.reduce((s,x)=>s+x.v,0),par,ids:best.map(x=>x.id)};
+}
+function teamTotals(t){
+  let thru=0,score=0,par=0,front=0,frontPar=0,back=0,backPar=0,last=0;
+  for(let n=1;n<=18;n++){const h=teamHole(t,n); if(!h) continue; thru++; last=n; score+=h.score; par+=h.par;
+    if(n<=9){front+=h.score;frontPar+=h.par}else{back+=h.score;backPar+=h.par}}
+  return {thru,score,par,toPar:score-par,front,frontPar,back,backPar};
+}
+const mark=(s,par)=>{const d=s-par;const c=d<=-2?"eg":d===-1?"bd":d===0?"":d===1?"bg":d===2?"db":"tb";return c?`<span class="mk ${c}">${s}</span>`:`<span class="mk">${s}</span>`;};
+const fmtPar=v=>v===0?"E":v>0?"+"+v:"−"+(-v);
+function playerStats(p){let g=0,pt=0,n=0;for(let h=1;h<=18;h++){const e=entry(p.id,h);if(e){g+=e.s;pt+=Number(e.p)||0;n++;}}return {gross:g,putts:pt,holes:n};}
+const dots=k=>k>0?`<span class="dots" aria-label="${k} stroke${k>1?"s":""}">${"•".repeat(k)}</span>`:k<0?`<span class="dots minus" aria-label="gives back ${-k}">+${-k}</span>`:"";
+
+function vTeam(){
+  const t=S.teams.find(x=>x.id===S.teamId);
+  if(!t){S.view="choose";return vChoose();}
+  const ps=teamPlayers(t.id), tot=teamTotals(t);
+  let me=ls("me"); if(!ps.some(p=>p.id===me)) me=null;
+  const head=`
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+    <button class="back" data-act="start" type="button">← All teams</button>
+    <button class="back" data-act="board" type="button"><span class="bolt" aria-hidden="true">⚡</span> Live Leaderboard →</button></div>
+  <div class="team-top">
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="chip ${t.division==="ladies"?"ladies":""}" style="align-self:flex-start">${divName(t.division)} division</span><h1>${esc(t.name)}</h1>${t.teeTime?`<span class="teebig num">Tee time <b>${fmtTime(t.teeTime)}</b></span>`:""}</div>
+    <div class="topar num ${tot.thru?"":"idle"}"><b>${tot.thru?fmtPar(tot.toPar):"–"}</b><span>${tot.thru?`thru ${tot.thru}`:"not started"}</span></div>
+  </div>`;
+  if(!ps.length) return head+`<div class="empty"><b>No golfers on this team yet</b><span>The tournament admin adds golfers to teams.</span></div>`;
+  if(!S.course?.holes?.length) return head+`<div class="empty"><b>The course isn't loaded yet</b></div>`;
+  const who_unused=`<section class="panel"><h2>Who's entering scores?</h2>
+    <div class="who-row">${ps.map(p=>`<button type="button" class="who-chip" data-act="me" data-id="${esc(p.id)}" aria-pressed="${me===p.id}"><b>${esc(p.name)}</b><span class="num">HCP ${fmtH(p.handicap)}</span></button>`).join("")}</div>
+    ${me?"":`<p class="note">Tap your name. Each golfer enters their own score and putts.</p>`}</section>`;
+  return head+vEntry(t,ps)+vTeamCard(t,ps);
+}
+function vEntry(t,ps){
+  const n=S.hole, h=hole(n);
+  if(!S.draft||S.draft.tid!==t.id||S.draft.n!==n){
+    const v={}; ps.forEach(p=>{const e=entry(p.id,n);v[p.id]={s:e?.s??null,p:e?.p??null,had:!!e};}); S.draft={tid:t.id,n,v};
+  }
+  const v=S.draft.v; ps.forEach(p=>{if(!v[p.id])v[p.id]={s:null,p:null,had:false};});
+  const ready=ps.every(p=>v[p.id].s!=null&&v[p.id].p!=null);
+  const allIn=ps.every(p=>entry(p.id,n));
+  // live preview of team score using draft values
+  const k=Math.min(counts(n),ps.length);
+  const nets=ps.filter(p=>v[p.id].s!=null).map(p=>({id:p.id,v:v[p.id].s-strokes(p,n)})).sort((a,b)=>a.v-b.v);
+  const full=nets.length===ps.length;
+  const best=full?nets.slice(0,k):[], cntIds=best.map(x=>x.id), tscore=best.reduce((a,x)=>a+x.v,0);
+  const strip=Array.from({length:18},(_,i)=>{const m=i+1;const done=ps.every(p=>entry(p.id,m));const part=!done&&ps.some(p=>entry(p.id,m));
+    return `<button type="button" class="hs ${m===n?"cur":""} ${done?"done":part?"part":""}" data-act="hole" data-n="${m}" aria-label="Hole ${m}${done?", entered":""}">${m}</button>`}).join("");
+  const rows=ps.map(p=>{const d=v[p.id], kk=strokes(p,n), nv=d.s==null?"–":d.s-kk, pid=esc(p.id);
+    return `<div class="prow ${cntIds.includes(p.id)?"counts":""} ${d.s==null||d.p==null?"todo":""}">
+      <div class="pname"><b>${esc(p.name)}</b><span class="num">${dots(kk)}${kk?` ${kk>0?kk+" stroke"+(kk>1?"s":""):"gives "+(-kk)}`:"no stroke"} · net <b>${nv}</b></span></div>
+      <div class="mini"><span class="lbl">Score</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="s" data-d="-1" aria-label="${esc(p.name)} score down">−</button><output class="num ${d.s==null?"blank":d.s<h.par?"under":d.s>h.par?"over":""}">${d.s??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="s" data-d="1" aria-label="${esc(p.name)} score up">+</button></div></div>
+      <div class="mini"><span class="lbl">Putts</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="-1" aria-label="${esc(p.name)} putts down">−</button><output class="num ${d.p==null?"blank":d.p<=1?"p1":d.p===2?"p2":"p3"}">${d.p??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="1" aria-label="${esc(p.name)} putts up">+</button></div></div>
+    </div>`}).join("");
+  return `<section class="panel entry">
+    <div class="hs-row" role="group" aria-label="Holes">${strip}</div>
+    <div class="hole-head">
+      <div><span class="eyebrow">${n<=9?"Front 9 · best net score counts":"Back 9 · best 2 net scores count"}</span><h2 style="font-size:40px">Hole ${n}</h2></div>
+      <div class="hole-facts num"><span><b>${h.par}</b>Par</span><span><b>${teeFor(t.division)?.yards?.[n-1]??"–"}</b>Yds</span><span><b>${h[hcpKey(t.division)]??"–"}</b>HCP</span></div>
+    </div>
+    <div class="prows">${rows}</div>
+    <div class="hole-sum num">${full?`Team on this hole: <b>${tscore}</b> net (${fmtPar(tscore-h.par*k)})`:`Tap + or − to enter each golfer's score and putts. The first tap sets par for score and 2 for putts.`}</div>
+    <div class="row-actions save-bar">
+      ${allIn?`<button class="btn" type="button" data-act="clearhole">Clear hole</button>`:""}
+      <button class="btn primary" type="button" data-act="savehole" style="flex:1" ${ready?"":"disabled"}>${ready?`${allIn?"Update":"Save"} hole ${n}${n<18?" & next":""}`:`Enter all scores and putts`}</button>
+    </div>
+  </section>`;
+}
+function vTeamCard(t,ps,bare){
+  const c=S.course, rng=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
+  const half=(a,b,lbl)=>{
+    const hs=rng(a,b);
+    const pr=hs.reduce((x,n)=>x+hole(n).par,0);
+    const prow=p=>{let g=0,all=true;const cells=hs.map(n=>{const e=entry(p.id,n);const th=teamHole(t,n);const cnt=th&&th.ids.includes(p.id);if(e)g+=e.s;else all=false;
+      return `<td class="${cnt?"cnt":""}">${e?`${mark(e.s,hole(n).par)}<sup class="netsup" aria-label="net ${e.s-strokes(p,n)}">${e.s-strokes(p,n)}</sup>`:""}</td>`}).join("");
+      return `<tr><th scope="row">${esc(p.name.split(" ")[0])}</th>${cells}<td class="sum">${g||""}</td></tr>`;};
+    let ts=0;const tcells=hs.map(n=>{const th=teamHole(t,n);if(th)ts+=th.score;return `<td>${th?th.score:""}</td>`}).join("");
+    return `<div class="scroll"><table class="grid num"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">Tot</th></tr></thead>
+      <tbody><tr class="par"><th scope="row">Par</th>${hs.map(n=>`<td>${hole(n).par}</td>`).join("")}<td class="sum">${pr}</td></tr>
+      ${ps.map(prow).join("")}
+      <tr class="team-row"><th scope="row">Team</th>${tcells}<td class="sum">${ts||""}</td></tr></tbody></table></div>`;
+  };
+  const pc=v=>v==null?"":v<=1?"p1":v===2?"p2":"p3";
+  const puttHalf=(a,b,lbl)=>{const hs=rng(a,b);
+    const prow=p=>{let tot=0;const cells=hs.map(n=>{const e=entry(p.id,n);const v=e?Number(e.p):null;if(v!=null&&!isNaN(v))tot+=v;return `<td class="${pc(v)}">${v??""}</td>`}).join("");
+      return `<tr><th scope="row">${esc(p.name.split(" ")[0])}</th>${cells}<td class="sum">${tot||""}</td></tr>`;};
+    return `<div class="scroll"><table class="grid num putt-grid"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">Tot</th></tr></thead><tbody>${ps.map(prow).join("")}</tbody></table></div>`;};
+  const pcount=p=>{let one=0,three=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(!e)continue;const v=Number(e.p);if(v===1)one++;else if(v>=3)three++;}return {one,three};};
+  const putts=`<table class="card-table num"><thead><tr><th>Golfer</th><th class="r">1-putts</th><th class="r">3+ putts</th></tr></thead><tbody>${ps.map(p=>{const c=pcount(p);return `<tr><td>${esc(p.name)}</td><td class="r p1"><b>${c.one}</b></td><td class="r p3"><b>${c.three}</b></td></tr>`}).join("")}</tbody></table>`;
+  const inner=`<div class="sc-cap"><b>Front 9</b> · single lowest net score counts</div>${half(1,9,"Out")}<div class="sc-cap"><b>Back 9</b> · two lowest net scores count</div>${half(10,18,"In")}
+    <p class="note">Big number is gross; small raised number is net. Highlighted scores count for the team. Team row is net.</p>
+    <div class="sc-legend"><span><span class="mk eg">2</span>Eagle</span><span><span class="mk bd">3</span>Birdie</span><span><span class="mk bg">5</span>Bogey</span><span><span class="mk db">6</span>Double</span><span><span class="mk tb">7</span>Triple+</span></div>`;
+  if(bare) return inner;
+  return `<section class="panel"><h2>Team scorecard</h2>${inner}<h3>Putts</h3>${putts}</section>
+    <button class="btn" data-act="leave" type="button">This isn't my team</button>`;
+}
+function vBoard(){
+  const d=S.boardDiv||S.div;
+  const ts=S.teams.filter(t=>t.division===d).map(t=>({t,x:teamTotals(t)}))
+    .sort((a,b)=>(b.x.thru>0)-(a.x.thru>0)||a.x.toPar-b.x.toPar||b.x.thru-a.x.thru||byName(a.t,b.t));
+  let pos=0,prev=null;
+  const rows=ts.map((r,i)=>{if(r.x.thru&&r.x.toPar!==prev){pos=i+1;prev=r.x.toPar;}
+    const open=S.openTeams.has(r.t.id), ps=teamPlayers(r.t.id);
+    return `<details class="lb-row ${r.t.id===S.teamId?"mine":""}" data-team="${esc(r.t.id)}" ${open?"open":""}>
+      <summary class="lb-grid num"><span>${r.x.thru?pos:""}</span><span class="tn"><span>${esc(r.t.name)}</span><span class="sc-toggle"><span class="when-closed">Show scorecard ▾</span><span class="when-open">Hide scorecard ▴</span></span></span>
+      <span class="r"><b>${r.x.thru?fmtPar(r.x.toPar):"–"}</b></span><span class="r">${r.x.thru?(r.x.thru===18?"F":r.x.thru):(r.t.teeTime?fmtTime(r.t.teeTime):"–")}</span>
+      <span class="r">${r.x.thru?r.x.score:"–"}</span></summary>
+      <div class="lb-body">${open?(ps.length?vTeamCard(r.t,ps,true):`<p class="muted">No golfers on this team yet.</p>`):""}</div>
+    </details>`}).join("");
+  const pc=p=>{let one=0,three=0,holes=0,tot=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(!e)continue;holes++;const v=Number(e.p);if(!isNaN(v))tot+=v;if(v===1)one++;else if(v>=3)three++;}return {one,three,holes,tot};};
+  const pl=S.players.filter(p=>p.division===d).map(p=>({p,c:pc(p)})).filter(r=>r.c.holes)
+    .sort((a,b)=>b.c.one-a.c.one||a.c.three-b.c.three||byName(a.p,b.p));
+  const maxOne=pl.reduce((m,r)=>Math.max(m,r.c.one),0);
+  const POKER_START=40;
+  let threes=0; for(const p of S.players){ if(p.division!==d||!S.teams.some(t=>t.id===p.teamId)) continue; for(let n=1;n<=18;n++){const e=entry(p.id,n); if(e&&Number(e.p)>=3) threes++;} }
+  return `
+  <div class="seg" role="group" aria-label="Division">
+    <button type="button" data-act="bdiv" data-div="men" aria-pressed="${d==="men"}">Men's</button>
+    <button type="button" data-act="bdiv" data-div="ladies" aria-pressed="${d==="ladies"}">Ladies'</button></div>
+  <section class="pot" aria-label="${divName(d)} 3-Putt Poker pot">
+    <div class="pot-main">
+      <div class="pot-top"><span class="pot-label">${divName(d)} 3-Putt Poker</span><span class="pot-suits" aria-hidden="true"><span>♠︎</span><span class="r">♥︎</span><span>♣︎</span><span class="r">♦︎</span></span></div>
+      <div class="pot-amt num"><span class="chips" aria-hidden="true"><i></i><i></i><i></i></span>$${POKER_START+threes}</div>
+      <div class="pot-sub num">$${POKER_START} starting pot + $${threes} from ${threes} three‑putt${threes===1?"":"s"}</div>
+    </div>
+  </section>
+  ${ts.length?`<section class="panel">
+    <div class="lb-grid lb-head"><span>#</span><span>Team</span><span class="r">Net score</span><span class="r">Thru</span><span class="r">Team score</span></div>
+    <div class="lb-list">${rows}</div>
+    <p class="note">Net, to par. A hole counts once every golfer on the team has entered a score.</p></section>`
+    :`<div class="empty"><b>No ${divName(d)} teams yet</b></div>`}
+  ${pl.length?`<section class="panel"><h2>Putting</h2><div class="scroll"><table class="card-table num">
+    <thead><tr><th>Golfer</th><th class="r">1-putts</th><th class="r">3+</th><th class="r">Owed</th><th class="r">Putts</th></tr></thead>
+    <tbody>${pl.map(r=>`<tr><td>${esc(r.p.name)}</td><td class="r p1"><b>${r.c.one}</b>${maxOne>0&&r.c.one===maxOne?` <span class="star" aria-label="most 1-putts">★</span>`:""}</td><td class="r p3"><b>${r.c.three}</b></td><td class="r ${r.c.three?"p3":"muted"}"><b>$${r.c.three}</b></td><td class="r"><b>${r.c.tot}</b><span class="thru-sm">thru ${r.c.holes}</span></td></tr>`).join("")}</tbody></table></div></section>`:""}`;
+}
+
+/* ---------- admin ---------- */
+function vAdmin(){
+  if(!isAdmin) {S.view="home";return vHome();}
+  const tabs=[["event","Event & rules"],["course","Course"],["players","Players"],["teams","Teams"],["reset","Reset"]];
+  const body=S.adminTab==="event"?aEvent():S.adminTab==="course"?aCourse():S.adminTab==="players"?aPlayers():S.adminTab==="reset"?aReset()+aImport():aTeams();
+  return `<div><div class="eyebrow">Tournament admin</div><h1>${esc(eventName())}</h1></div>
+  <div class="tabs" role="group">${tabs.map(([k,l])=>`<button type="button" data-act="atab" data-tab="${k}" aria-pressed="${S.adminTab===k}">${l}</button>`).join("")}</div>${body}`;
+}
+function aEvent(){
+  const e=S.event||{};
+  return `<form class="panel" id="evForm">
+    <h2>Event details</h2>
+    <div class="form">
+      <div class="field wide"><label for="evName">Tournament name</label><input id="evName" value="${esc(e.name||"")}" placeholder="e.g. Fall Classic 2026" maxlength="80"></div>
+      <div class="field"><label for="evDate">Date</label><input id="evDate" type="date" value="${esc(e.date||"")}"></div>
+      <div class="field"><label for="evStart">Start time</label><input id="evStart" type="time" value="${esc(e.startTime||"10:00")}"></div>
+      <div class="field"><label for="evCourse">Course</label><input id="evCourse" value="${esc(e.course||"")}" maxlength="80"></div>
+      <div class="field"><label for="evFormat">Format</label><input id="evFormat" value="${esc(e.format||"")}" placeholder="e.g. 4-person scramble" maxlength="60"></div>
+      ${S.course?.tees?.length?`<div class="field"><label for="evMenTee">Men's tees</label><select id="evMenTee">${S.course.tees.map(t=>`<option ${t.name===(e.menTee||"White")?"selected":""}>${esc(t.name)}</option>`).join("")}</select></div>
+      <div class="field"><label for="evLadiesTee">Ladies' tees</label><select id="evLadiesTee">${S.course.tees.map(t=>`<option ${t.name===(e.ladiesTee||"Red")?"selected":""}>${esc(t.name)}</option>`).join("")}</select></div>`:""}
+      <div class="field wide"><label for="evWelcome">Welcome note (optional)</label><input id="evWelcome" value="${esc(e.welcome||"")}" maxlength="240"></div>
+      <div class="field wide"><label for="evRulesMen">Men's rules — one per line</label><textarea id="evRulesMen" placeholder="${esc(rulesFor("men").list.join("\n"))}">${esc(e.rulesMen??e.rules??"")}</textarea></div>
+      <div class="field wide"><label for="evRulesLadies">Ladies' rules — one per line</label><textarea id="evRulesLadies" placeholder="${esc(rulesFor("ladies").list.join("\n"))}">${esc(e.rulesLadies??e.rules??"")}</textarea></div>
+    </div>
+    <div class="row-actions"><button class="btn primary" type="submit">Save event</button></div>
+  </form>
+  <section class="panel">
+    <h2>Welcome screen photos</h2>
+    ${assets?`<div class="photo-row">
+      <div class="photo-slot"><label class="eyebrow" for="upHero">Background photo</label>
+        <div class="pv">${!S.hero?.off?`<img src="${esc(heroSrc())}" alt="">`:"Drawn course scene"}</div>
+        <input id="upHero" type="file" accept="image/jpeg,image/png,image/webp" data-slot="hero">
+        ${!S.hero?.off?`<button class="btn sm" type="button" data-act="clearimg" data-slot="hero">Use drawn scene instead</button>`:""}</div>
+      <div class="photo-slot"><label class="eyebrow" for="upLogo">Course logo</label>
+        <div class="pv logo-pv">${!S.logo?.off?`<img src="${esc(logoSrc())}" alt="">`:"FF monogram"}</div>
+        <input id="upLogo" type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-slot="logo">
+        ${!S.logo?.off?`<button class="btn sm" type="button" data-act="clearimg" data-slot="logo">Use monogram instead</button>`:""}</div>
+    </div>
+    <p class="note">A wide landscape photo works best. Photos are resized automatically before saving.</p>`
+    :""}
+  </section>`;
+}
+function aCourse(){
+  const c=S.course; if(!c?.holes?.length) return `<div class="empty"><b>No course loaded</b><span>Ask Claude to load the course scorecard.</span></div>`;
+  const dupes=k=>{const v=c.holes.map(h=>Number(h[k]));return v.length!==18||new Set(v).size!==18||v.some(x=>!(x>=1&&x<=18));};
+  return `<form class="panel" id="cForm">
+    <h2>${esc(c.name||"Course")}</h2>
+    <p class="note">Check par and hole handicaps against the card in the pro shop and correct anything that's off. Each handicap column must use 1–18 once.</p>
+    ${dupes("hcpM")||dupes("hcpL")?`<p class="note" style="color:var(--danger)">A handicap column repeats or skips a number.</p>`:""}
+    <div style="overflow-x:auto"><table class="card-table num edit">
+      <thead><tr><th>Hole</th><th>Par</th><th>Men HCP</th><th>Ladies HCP</th></tr></thead>
+      <tbody>${c.holes.map((h,i)=>`<tr><td><b>${h.n}</b></td>
+        <td><input id="cPar${i}" type="number" min="3" max="6" inputmode="numeric" value="${h.par}" aria-label="Hole ${h.n} par"></td>
+        <td><input id="cHm${i}" type="number" min="1" max="18" inputmode="numeric" value="${h.hcpM??""}" aria-label="Hole ${h.n} men's handicap"></td>
+        <td><input id="cHl${i}" type="number" min="1" max="18" inputmode="numeric" value="${h.hcpL??""}" aria-label="Hole ${h.n} ladies' handicap"></td></tr>`).join("")}</tbody>
+    </table></div>
+    <div class="row-actions"><button class="btn primary" type="submit">Save course</button></div>
+  </form>`;
+}
+function aImport(){
+  return `<section class="panel">
+    <h2>Load starting data</h2>
+    <p>Copies the course, hole handicaps, rules, payouts settings and the 24 players from the original app into this one. Use it once, on a fresh database.</p>
+    <label class="ropt"><input id="iTest" type="checkbox" ${S.iTest?"checked":""}> <span><b>Also load the test teams and scores</b><small>Six test teams with practice scores. Clear them later with Reset.</small></span></label>
+    <div class="row-actions"><button class="btn primary" type="button" data-act="import" ${S.importing?"disabled":""}>${S.importing?"Loading…":"Load starting data"}</button></div>
+  </section>`;
+}
+function aReset(){
+  const nScores=Object.keys(S.scores).length, nTeams=S.teams.length, nAssigned=S.players.filter(p=>p.teamId).length;
+  const armed=S.armed==="reset", busy=S.resetting;
+  return `<section class="panel">
+    <h2>Reset for next year</h2>
+    <p>Clears the tournament so you can set it up again. Players and their handicaps stay, along with the course, rules and photos.</p>
+    <div class="reset-opts">
+      <label class="ropt"><input id="rScores" type="checkbox" ${S.rScores!==false?"checked":""}> <span><b>Clear all scores</b><small>${nScores} golfer${nScores===1?"":"s"} with scores entered. Empties the Live Leaderboard and both poker pots.</small></span></label>
+      <label class="ropt"><input id="rChat" type="checkbox" ${S.rChat!==false?"checked":""}> <span><b>Clear chat</b><small>${(S.chat||[]).length} message${(S.chat||[]).length===1?"":"s"} in Trash Talk.</small></span></label>
+      <label class="ropt"><input id="rTeams" type="checkbox" ${S.rTeams!==false?"checked":""}> <span><b>Clear all teams</b><small>${nTeams} team${nTeams===1?"":"s"} and their tee times. ${nAssigned} golfer${nAssigned===1?"":"s"} go back to unassigned.</small></span></label>
+    </div>
+    <p class="note" style="color:var(--danger)">This can't be undone.</p>
+    <div class="row-actions">
+      ${armed?`<button class="btn" type="button" data-act="resetcancel" ${busy?"disabled":""}>Cancel</button>`:""}
+      <button class="btn danger ${armed?"armed":""}" type="button" data-act="reset" ${busy?"disabled":""}>${busy?"Clearing…":armed?"Yes, clear it all":"Reset tournament"}</button>
+    </div>
+  </section>`;
+}
+function aPlayers(){
+  const ed=S.editPlayer?S.players.find(p=>p.id===S.editPlayer):null;
+  const groups=["men","ladies"].map(d=>{
+    const ps=S.players.filter(p=>p.division===d).sort(byName);
+    return `<section class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h2>${divName(d)}</h2><span class="muted num">${ps.length} golfers</span></div>
+    ${ps.length?`<ul class="plist">${ps.map(p=>{const t=S.teams.find(x=>x.id===p.teamId);return `<li>
+      <div class="who"><b>${esc(p.name)}</b><small>${t?esc(t.name):"No team"}</small></div>
+      <span class="num" style="font-weight:700">${fmtH(p.handicap)}</span>
+      <div class="row-actions"><button class="btn sm" type="button" data-act="pedit" data-id="${esc(p.id)}">Edit</button>
+      <button class="btn sm danger ${S.armed===p.id?"armed":""}" type="button" data-act="pdel" data-id="${esc(p.id)}">${S.armed===p.id?"Confirm":"Delete"}</button></div></li>`}).join("")}</ul>`
+      :`<p class="muted">No ${divName(d).toLowerCase()} golfers yet.</p>`}</section>`;
+  }).join("");
+  return `<form class="panel" id="pForm">
+    <h2>${ed?"Edit golfer":"Add a golfer"}</h2>
+    <div class="form">
+      <div class="field wide"><label for="pName">Name</label><input id="pName" required maxlength="60" value="${esc(ed?.name||"")}" autocomplete="off"></div>
+      <div class="field"><label for="pHcp">Handicap</label>
+        <div class="hcp-row"><input id="pHcp" type="number" step="0.1" min="-10" max="54" inputmode="decimal" value="${ed?esc(ed.handicap??""):""}" ${ed&&ed.handicap==null?"disabled":""}>
+        <label class="tbd"><input id="pTbd" type="checkbox" ${ed&&ed.handicap==null?"checked":""}> TBD</label></div></div>
+      <div class="field"><label for="pDiv">Division</label><select id="pDiv"><option value="men" ${(ed?.division||S.lastDiv||"men")==="men"?"selected":""}>Men's</option><option value="ladies" ${(ed?.division||S.lastDiv)==="ladies"?"selected":""}>Ladies'</option></select></div>
+    </div>
+    <p class="note">For a plus handicap, enter a negative number (−2 shows as +2). Tick TBD if the handicap isn't known yet; that golfer gets no strokes until it's set.</p>
+    <div class="row-actions">${ed?`<button class="btn" type="button" data-act="pcancel">Cancel</button>`:""}<button class="btn primary" type="submit">${ed?"Save golfer":"Add golfer"}</button></div>
+  </form>${groups}`;
+}
+function aTeams(){
+  const groups=["men","ladies"].map(d=>{
+    const ts=S.teams.filter(t=>t.division===d).sort(byTee);
+    const free=S.players.filter(p=>p.division===d&&!S.teams.some(t=>t.id===p.teamId)).sort(byName);
+    return `<section class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h2>${divName(d)} teams</h2><span class="muted num">${free.length} unassigned</span></div>
+    ${ts.length?ts.map(t=>{const ps=teamPlayers(t.id);return `<div class="admin-team">
+      <div class="team-head" style="${d==="ladies"?"background:var(--ladies-soft)":""}"><h3>${esc(t.name)}</h3>
+        <button class="btn sm danger ${S.armed===t.id?"armed":""}" type="button" data-act="tdel" data-id="${esc(t.id)}">${S.armed===t.id?"Confirm":"Delete team"}</button></div>
+      <div class="body">
+        <div class="field" style="flex-direction:row;align-items:center;gap:10px"><label for="tTime-${esc(t.id)}" style="flex:0 0 auto">Tee time</label>
+          <input id="tTime-${esc(t.id)}" type="time" step="60" value="${esc(t.teeTime||"")}" data-team="${esc(t.id)}" style="max-width:160px"></div>
+        ${ps.length?`<ul class="members">${ps.map(p=>`<li><span>${esc(p.name)}</span><span class="num" style="font-weight:700">${fmtH(p.handicap)}</span>
+          <button class="btn sm" type="button" data-act="tremove" data-id="${esc(p.id)}" aria-label="Remove ${esc(p.name)}">Remove</button></li>`).join("")}</ul>`:`<p class="muted">No golfers yet.</p>`}
+        <div class="muted num" style="font-size:14px">${ps.length}/4 golfers · Team HCP ${teamHcp(t.id)}</div>
+        ${ps.length<4?(free.length?`<div class="addrow"><select id="add-${esc(t.id)}" aria-label="Golfer to add to ${esc(t.name)}"><option value="">Add a golfer…</option>${free.map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${fmtH(p.handicap)})</option>`).join("")}</select>
+          <button class="btn sm primary" type="button" data-act="tadd" data-id="${esc(t.id)}">Add</button></div>`:`<p class="note">All ${divName(d).toLowerCase()} golfers are on a team. Add more in Players.</p>`):""}
+      </div></div>`}).join(""):`<p class="muted">No ${divName(d).toLowerCase()} teams yet.</p>`}
+    </section>`;
+  }).join("");
+  return `<form class="panel" id="tForm">
+    <h2>Create a team</h2>
+    <div class="form">
+      <div class="field"><label for="tName">Team name</label><input id="tName" required maxlength="40" placeholder="e.g. Team 1" autocomplete="off"></div>
+      <div class="field"><label for="tTime">Tee time</label><input id="tTime" type="time" step="60"></div>
+      <div class="field"><label for="tDiv">Division</label><select id="tDiv"><option value="men">Men's</option><option value="ladies" ${S.lastTDiv==="ladies"?"selected":""}>Ladies'</option></select></div>
+      <button class="btn primary" type="submit">Create team</button>
+    </div></form>${groups}`;
+}
+
+function fmtDate(d){try{const [y,m,dd]=d.split("-").map(Number);return new Date(y,m-1,dd).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});}catch(e){return d}}
+
+/* ---------- render ---------- */
+function render(){
+  const W=document.getElementById("welcome"), M=document.getElementById("main"), H=document.querySelector("header.bar");
+  const onW=S.view==="welcome"||S.view==="division"; W.hidden=!onW; M.hidden=onW; H.hidden=onW;
+  if(onW){ W.innerHTML=S.view==="division"?vDivision():vWelcome(); return; }
+  document.getElementById("brand").textContent=eventName();
+  document.getElementById("footAdmin").hidden=!isAdmin||S.view==="admin";
+  document.getElementById("footSignIn").hidden=isAdmin;
+  document.getElementById("footSignOut").hidden=!isAdmin;
+  document.getElementById("navRules").setAttribute("aria-pressed",String(!!S.rulesOpen));
+  document.getElementById("navBoard").setAttribute("aria-pressed",String(!!S.boardOpen));
+  renderBoard(); renderRules(); renderChat();
+  const html = !db ? `<div class="empty"><b>Connecting…</b><span>If this doesn't load, check your internet connection and reload.</span></div>`
+    : S.view==="choose"?vChoose() : S.view==="board"?vBoard() : S.view==="team"?vTeam() : S.view==="admin"?vAdmin() : vHome();
+  // preserve focus on inputs during live re-render
+  const a=document.activeElement, fid=a&&a.id, sel=a&&a.selectionStart;
+  if(fid && /^(ev|p|t|c)[A-Z]/.test(fid) && S.view==="admin") return; // don't clobber a form being typed in
+  app.innerHTML=html;
+  if(fid){const n=document.getElementById(fid); if(n){n.focus(); try{if(sel!=null)n.setSelectionRange(sel,sel)}catch(e){}}}
+}
+function renderBoard(){
+  const m=document.getElementById("lbModal"); m.hidden=!S.boardOpen;
+  document.documentElement.style.overflow=(S.boardOpen||S.rulesOpen||S.chatOpen)?"hidden":"";
+  if(!S.boardOpen) return;
+  const body=document.getElementById("lbBody"), y=body.scrollTop;
+  body.innerHTML=db?vBoard():`<div class="empty"><b>Sign in to see the leaderboard</b></div>`;
+  body.scrollTop=y;
+}
+function shrinkImage(file,max){
+  return new Promise((res,rej)=>{const img=new Image(), url=URL.createObjectURL(file);
+    img.onload=()=>{let w=img.naturalWidth,h=img.naturalHeight,k=Math.min(1,max/Math.max(w,h));
+      const c=document.createElement("canvas"); c.width=Math.round(w*k); c.height=Math.round(h*k);
+      const g=c.getContext("2d"); if(max<=400){g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);} g.drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url); let q=.82, d=c.toDataURL("image/jpeg",q); while(d.length>900000&&q>.4){q-=.1;d=c.toDataURL("image/jpeg",q);} res(d);};
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("bad image"));}; img.src=url;});
+}
+async function adminSignIn(){
+  const prov=new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({prompt:"select_account"});
+  try{ await firebase.auth().signInWithPopup(prov); }
+  catch(e){ if(e?.code==="auth/popup-blocked"||e?.code==="auth/operation-not-supported-in-this-environment"){ await firebase.auth().signInWithRedirect(prov); }
+    else if(e?.code!=="auth/popup-closed-by-user"&&e?.code!=="auth/cancelled-popup-request") toast("Sign-in didn't work. Try again."); }
+}
+/* ---------- chat ---------- */
+function chatMe(){const id=ls("chatMe");return S.players.find(p=>p.id===id)||null;}
+function fmtClock(iso){try{return new Date(iso).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});}catch(e){return ""}}
+function renderChat(){
+  const m=document.getElementById("chatModal"); m.hidden=!S.chatOpen;
+  document.getElementById("chatDot").hidden=!(S.chatUnread&&!S.chatOpen);
+  if(!S.chatOpen) return;
+  const me=chatMe(), body=document.getElementById("chatBody");
+  const atBottom=body.scrollHeight-body.scrollTop-body.clientHeight<60;
+  const msgs=[...(S.chat||[])].sort((a,b)=>(a.at||"").localeCompare(b.at||""));
+  if(S.chatPicking||!me){
+    const groups=S.teams.slice().sort(byTee).map(t=>`<div class="pick-team"><div class="eyebrow">${esc(t.name)}</div><div class="pick-row">${teamPlayers(t.id).map(p=>`<button type="button" class="pick" data-act="chatme" data-id="${esc(p.id)}">${esc(p.name)}</button>`).join("")}</div></div>`).join("");
+    const loose=S.players.filter(p=>!S.teams.some(t=>t.id===p.teamId)).sort(byName);
+    body.innerHTML=`<div class="pick-wrap"><h3>Who are you?</h3><p class="note">Pick your name once. Your messages will show it.</p>${groups}${loose.length?`<div class="pick-team"><div class="eyebrow">No team</div><div class="pick-row">${loose.map(p=>`<button type="button" class="pick" data-act="chatme" data-id="${esc(p.id)}">${esc(p.name)}</button>`).join("")}</div></div>`:""}</div>`;
+    document.getElementById("chatForm").hidden=true; return;
+  }
+  document.getElementById("chatForm").hidden=false;
+  const tm=S.teams.find(t=>t.id===me.teamId);
+  document.getElementById("chatAs").innerHTML=`Posting as <b>${esc(me.name)}</b>${tm?` · ${esc(tm.name)}`:""} <button type="button" class="linkbtn" data-act="chatswitch">Change</button>`;
+  body.innerHTML=msgs.length?msgs.map(x=>{
+    if(x.kind==="auto") return `<div class="msg auto"><span>${esc(x.t)}</span><time>${fmtClock(x.at)}</time>${isAdmin?`<button type="button" class="mdel ${S.armed==="m"+x.id?"armed":""}" data-act="chatdel" data-id="${esc(x.id)}" aria-label="Delete message">${S.armed==="m"+x.id?"Delete?":"×"}</button>`:""}</div>`;
+    const p=S.players.find(q=>q.id===x.pid), t=p&&S.teams.find(q=>q.id===p.teamId), mine=me&&x.pid===me.id;
+    return `<div class="msg ${mine?"mine":""}"><div class="who">${esc(p?.name||"Someone")}${t?` <span>· ${esc(t.name)}</span>`:""}<time>${fmtClock(x.at)}</time>${isAdmin?`<button type="button" class="mdel ${S.armed==="m"+x.id?"armed":""}" data-act="chatdel" data-id="${esc(x.id)}" aria-label="Delete message">${S.armed==="m"+x.id?"Delete?":"×"}</button>`:""}</div><div class="bubble">${esc(x.t)}</div></div>`;
+  }).join(""):`<div class="empty"><b>No messages yet</b><span>Start the trash talk.</span></div>`;
+  if(atBottom||S.chatJump){body.scrollTop=body.scrollHeight;S.chatJump=false;}
+}
+function openChat(){S.chatOpen=true;S.chatUnread=false;S.chatJump=true;markSeen();renderChat();document.documentElement.style.overflow="hidden";}
+function closeChat(){S.chatOpen=false;S.chatPicking=false;renderChat();if(!S.boardOpen&&!S.rulesOpen)document.documentElement.style.overflow="";}
+function markSeen(){const last=(S.chat||[]).reduce((m,x)=>x.at>m?x.at:m,"");if(last)ls("chatSeen",last);}
+async function postChat(t,kind){
+  const me=chatMe(); if(!t) return;
+  const at=new Date().toISOString();
+  return db.collection("chat").add(kind==="auto"?{t,kind:"auto",at,uid:myUid}:{t,pid:me?.id||null,uid:myUid,at,kind:"msg"});
+}
+function shoutouts(D){
+  const out=[], h=hole(D.n);
+  for(const [pid,d] of Object.entries(D.v)){
+    const p=S.players.find(q=>q.id===pid); if(!p) continue;
+    const prev=entry(pid,D.n);
+    if(prev&&prev.s===d.s&&prev.p===d.p) continue;
+    const diff=d.s-h.par;
+    if(d.s===1) out.push(`🎯 HOLE IN ONE! ${p.name} aced #${D.n}!`);
+    else if(diff<=-2) out.push(`🦅 ${p.name} eagled #${D.n}!`);
+    else if(diff===-1) out.push(`🐦 ${p.name} birdied #${D.n}`);
+    if(d.p>=3) out.push(`😬 ${p.name} ${d.p}-putted #${D.n}. +$1 to the pot`);
+  }
+  return out;
+}
+function renderRules(){
+  const m=document.getElementById("rulesModal"); m.hidden=!S.rulesOpen;
+  if(!S.rulesOpen) return;
+  const body=document.getElementById("rulesBody"), y=body.scrollTop;
+  body.innerHTML=vRulesModal(); body.scrollTop=y;
+}
+function openRules(){const mt=S.teams.find(x=>x.id===S.teamId);S.rulesDiv=mt?mt.division:S.div;S.rulesOpen=true;renderRules();document.documentElement.style.overflow="hidden";document.querySelector("#rulesModal .xbtn")?.focus();}
+function closeRules(){S.rulesOpen=false;renderRules();if(!S.boardOpen&&!S.chatOpen)document.documentElement.style.overflow="";}
+function openBoard(){const mt=S.teams.find(x=>x.id===S.teamId);S.boardDiv=mt?mt.division:S.div;S.boardOpen=true;renderBoard();document.querySelector("#lbModal .xbtn")?.focus();}
+function closeBoard(){S.boardOpen=false;renderBoard();document.getElementById("navBoard").setAttribute("aria-pressed","false");}
+function firstOpen(tid){const ps=teamPlayers(tid);for(let n=1;n<=18;n++){if(!ps.every(p=>entry(p.id,n)))return n;}return 18;}
+function go(v){S.view=v;S.armed=null;render();window.scrollTo(0,0)}
+
+/* ---------- events ---------- */
+document.getElementById("brand").onclick=()=>go("welcome");
+document.getElementById("navBoard").onclick=()=>openBoard();
+document.getElementById("lbModal").addEventListener("click",e=>{
+  if(e.target.closest("[data-mact=close]")) return closeBoard();
+  const b=e.target.closest("[data-act=bdiv]"); if(b){S.boardDiv=b.dataset.div;renderBoard();}
+});
+document.getElementById("lbModal").addEventListener("toggle",e=>{const dt=e.target;if(!dt.classList?.contains("lb-row"))return;const id=dt.dataset.team;
+  if(dt.open)S.openTeams.add(id);else S.openTeams.delete(id); if(dt.open&&!dt.querySelector(".lb-body").innerHTML.trim()) renderBoard();},true);
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return; if(S.chatOpen)closeChat(); else if(S.rulesOpen)closeRules(); else if(S.boardOpen)closeBoard();});
+document.getElementById("navChat").onclick=()=>openChat();
+document.getElementById("chatModal").addEventListener("click",async e=>{
+  if(e.target.closest("[data-mact=close]")) return closeChat();
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const a=b.dataset.act;
+  if(a==="chatme"){ls("chatMe",b.dataset.id);S.chatPicking=false;S.chatJump=true;renderChat();setTimeout(()=>document.getElementById("chatInput")?.focus(),50);}
+  if(a==="chatswitch"){S.chatPicking=true;renderChat();}
+  if(a==="chatdel"){const id=b.dataset.id; if(S.armed!=="m"+id){S.armed="m"+id;return renderChat();} S.armed=null;
+    await write(()=>db.doc("chat/"+id).delete(),"Message deleted");}
+});
+document.getElementById("chatForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const inp=document.getElementById("chatInput"); const t=inp.value.trim(); if(!t) return;
+  if(!chatMe()){S.chatPicking=true;return renderChat();}
+  const btn=document.getElementById("chatSend"); btn.disabled=true;
+  try{ await postChat(t); inp.value=""; S.chatJump=true; }
+  catch(err){ toast(err?.code==="permission-denied"?"Couldn't post. Reload the page and try again.":"Couldn't send. Try again."); }
+  btn.disabled=false; inp.focus();
+});
+document.getElementById("footAdmin").onclick=()=>go("admin");
+document.getElementById("footSignIn").onclick=()=>adminSignIn();
+document.getElementById("footSignOut").onclick=async()=>{await firebase.auth().signOut();toast("Signed out");};
+document.getElementById("navRules").onclick=()=>openRules();
+document.getElementById("rulesModal").addEventListener("click",e=>{
+  if(e.target.closest("[data-mact=close]")) return closeRules();
+  const b=e.target.closest("[data-act=rdiv]"); if(b){S.rulesDiv=b.dataset.div;renderRules();}
+});
+document.getElementById("welcome").addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;
+  const a=b.dataset.act;
+  if(a==="rules")go("division"); if(a==="admin")go("admin"); if(a==="signin")adminSignIn(); if(a==="welcome")go("welcome");
+  if(a==="pickdiv"){S.div=b.dataset.div;ls("myDiv",S.div);S.courseOpen=false;go("home");}});
+
+app.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const act=b.dataset.act, id=b.dataset.id;
+  if(act==="home") return go("home");
+  if(act==="welcome") return go("welcome");
+  if(act==="division") return go("division");
+  if(act==="clearimg"){ await write(()=>db.doc("config/"+b.dataset.slot).set({off:true}),"Photo removed"); return; }
+  if(act==="start") return go("choose");
+  if(act==="team") return go("team");
+  if(act==="board"){return openBoard();}
+  if(act==="bdiv"){S.boardDiv=b.dataset.div;return render();}
+  if(act==="hole"){S.hole=Number(b.dataset.n);S.draft=null;return render();}
+  if(act==="adj"){const f=b.dataset.f,dd=Number(b.dataset.d);const d=S.draft?.v?.[id]; if(!d) return;
+    if(f==="s") d.s = d.s==null ? (hole(S.draft.n)?.par||4) : Math.max(1,Math.min(15,d.s+dd));
+    else d.p = d.p==null ? 2 : Math.max(0,Math.min(9,d.p+dd));
+    if(d.p!=null&&d.s!=null&&d.p>d.s)d.p=d.s; return render();}
+  if(act==="savehole"){const D=S.draft;if(!D)return;
+    if(Object.values(D.v).some(d=>d.s==null||d.p==null)) return toast("Enter every golfer's score and putts first.");
+    b.disabled=true;
+    const shouts=shoutouts(D);
+    try{ for(const [pid,d] of Object.entries(D.v)){ if(!S.players.some(p=>p.id===pid&&p.teamId===D.tid)) continue;
+        const ref=db.doc("scores/"+pid);
+        await ref.set({h:{[D.n]:{s:d.s,p:d.p}},by:myUid},{merge:true}); }
+      for(const t of shouts){ try{ await postChat(t,"auto"); }catch(e){} }
+      toast(`Hole ${D.n} saved`); if(D.n<18){S.hole=D.n+1;} S.draft=null; render();
+      const en=document.querySelector(".entry"); if(en){const y=en.getBoundingClientRect().top+window.scrollY-70; window.scrollTo({top:Math.max(0,y),behavior:"smooth"});} }
+    catch(err){ b.disabled=false; toast(err?.code==="permission-denied"?"Couldn't save. Reload the page and try again.":"Couldn't save. Check your connection and try again."); }
+    return;}
+  if(act==="clearhole"){const D=S.draft;if(!D)return;b.disabled=true;
+    await write(async()=>{for(const pid of Object.keys(D.v)) if(S.scores[pid]) await db.doc("scores/"+pid).update({["h."+D.n]:firebase.firestore.FieldValue.delete()});},`Hole ${D.n} cleared`);S.draft=null;render();return;}
+  if(act==="div"){S.div=b.dataset.div;ls("myDiv",S.div);return render();}
+  if(act==="pick"){S.teamId=id;ls("myTeam",id);S.hole=firstOpen(id);S.draft=null;return go("team");}
+  if(act==="leave"){S.teamId=null;ls("myTeam",null);return go("choose");}
+  if(act==="import"){
+    S.iTest=document.getElementById("iTest")?.checked; S.importing=true; render();
+    try{
+      const seed=await (await fetch("seed.json",{cache:"no-store"})).json();
+      let batch=db.batch(), n=0; const flush=async()=>{await batch.commit(); batch=db.batch(); n=0;};
+      const put=async(path,data)=>{batch.set(db.doc(path),data); if(++n>=400) await flush();};
+      for(const [id,d] of Object.entries(seed.config)) await put("config/"+id,d);
+      for(const [id,d] of Object.entries(seed.players)) await put("players/"+id, S.iTest?d:{...d,teamId:null});
+      if(S.iTest){ for(const [id,d] of Object.entries(seed.teams)) await put("teams/"+id,d);
+                   for(const [id,d] of Object.entries(seed.scores)) await put("scores/"+id,{...d,by:"seed"}); }
+      await flush(); toast("Starting data loaded");
+    }catch(err){ toast(err?.code==="permission-denied"?"Only the admin can load data. Check the security rules.":"Couldn't load the data. Try again."); }
+    S.importing=false; render(); return;
+  }
+  if(act==="resetcancel"){S.armed=null;return render();}
+  if(act==="reset"){
+    const cs=document.getElementById("rScores")?.checked, ct=document.getElementById("rTeams")?.checked, cc=document.getElementById("rChat")?.checked;
+    S.rScores=cs; S.rTeams=ct; S.rChat=cc;
+    if(!cs&&!ct&&!cc) return toast("Tick at least one thing to clear.");
+    if(S.armed!=="reset"){S.armed="reset";return render();}
+    S.resetting=true; render();
+    try{
+      if(cs){ for(const id of Object.keys(S.scores)) await db.doc("scores/"+id).delete(); }
+      if(cc){ let snap; do{ snap=await db.collection("chat").limit(200).get(); for(const d of snap.docs) await db.doc("chat/"+d.id).delete(); }while(snap.size===200); }
+      if(ct){ for(const p of S.players.filter(p=>p.teamId)) await db.doc("players/"+p.id).update({teamId:null});
+              for(const t of [...S.teams]) await db.doc("teams/"+t.id).delete();
+              S.teamId=null; ls("myTeam",null); }
+      toast([cs&&"Scores",ct&&"teams",cc&&"chat"].filter(Boolean).join(" and ")+" cleared");
+    }catch(err){ toast("Reset stopped partway. Tap Reset again to finish."); }
+    S.resetting=false; S.armed=null; render(); return;
+  }
+  if(act==="atab"){S.adminTab=b.dataset.tab;S.editPlayer=null;S.armed=null;return render();}
+  if(act==="pedit"){S.editPlayer=id;render();window.scrollTo(0,0);document.getElementById("pName")?.focus();return;}
+  if(act==="pcancel"){S.editPlayer=null;document.activeElement?.blur();return render();}
+  if(act==="pdel"){ if(S.armed!==id){S.armed=id;return render();} S.armed=null;
+    await write(()=>db.doc("players/"+id).delete(),"Golfer deleted"); return; }
+  if(act==="tdel"){ if(S.armed!==id){S.armed=id;return render();} S.armed=null;
+    await write(async()=>{ for(const p of teamPlayers(id)) await db.doc("players/"+p.id).update({teamId:null}); await db.doc("teams/"+id).delete(); },"Team deleted"); return; }
+  if(act==="tremove"){ await write(()=>db.doc("players/"+id).update({teamId:null}),"Removed from team"); return; }
+  if(act==="tadd"){ const s=document.getElementById("add-"+id); const pid=s&&s.value; if(!pid) return toast("Pick a golfer first.");
+    if(teamPlayers(id).length>=4) return toast("That team already has four golfers.");
+    await write(()=>db.doc("players/"+pid).update({teamId:id}),"Added to team"); return; }
+});
+
+app.addEventListener("change",async e=>{
+  const inp=e.target;
+  if(inp.id==="iTest"){S.iTest=inp.checked;return;}
+  if(inp.id==="rScores"||inp.id==="rTeams"||inp.id==="rChat"){S[inp.id]=inp.checked;S.armed=null;render();return;}
+  if(inp.id==="pTbd"){const hi=document.getElementById("pHcp"); hi.disabled=inp.checked; if(inp.checked) hi.value=""; else hi.focus(); return;}
+  if(inp.type==="time"&&inp.dataset.team){ const id=inp.dataset.team; const val=inp.value||null; inp.blur();
+    await write(()=>db.doc("teams/"+id).update({teeTime:val}), val?"Tee time set to "+fmtTime(val):"Tee time cleared"); render(); return; } if(inp.type!=="file"||!inp.dataset.slot||!inp.files[0]) return;
+  const f=inp.files[0]; if(f.size>20*1024*1024) return toast("That photo is over 20 MB. Pick a smaller one.");
+  toast("Uploading…");
+  try{ const data=await shrinkImage(f, inp.dataset.slot==="logo"?400:1600);
+    await db.doc("config/"+inp.dataset.slot).set({data}); toast("Photo saved"); }
+  catch(err){ toast(err?.code==="permission-denied"?"Only the admin can change photos.":"Couldn't use that image. Try a JPG or PNG."); }
+  inp.value="";
+});
+app.addEventListener("toggle",e=>{
+  const dt=e.target; if(dt.classList&&dt.classList.contains("lb-row")){const id=dt.dataset.team;
+    if(dt.open&&!S.openTeams.has(id)){S.openTeams.add(id);render();} else if(!dt.open&&S.openTeams.has(id)){S.openTeams.delete(id);render();} return;}if(e.target.id==="courseCard")S.courseOpen=e.target.open;},true);
+app.addEventListener("submit",async e=>{
+  e.preventDefault(); const f=e.target; const v=id=>document.getElementById(id).value.trim();
+  if(f.id==="evForm"){
+    const data={name:v("evName"),date:v("evDate"),startTime:v("evStart")||"10:00",course:v("evCourse"),format:v("evFormat"),welcome:v("evWelcome"),rules:"",rulesMen:document.getElementById("evRulesMen").value,rulesLadies:document.getElementById("evRulesLadies").value};
+    const mt=document.getElementById("evMenTee"),lt=document.getElementById("evLadiesTee"); if(mt){data.menTee=mt.value;data.ladiesTee=lt.value;}
+    document.activeElement?.blur();
+    await write(()=>db.doc("config/event").set(data),"Event saved");
+  }
+  if(f.id==="cForm"){
+    const holes=S.course.holes.map((h,i)=>{const n=id=>{const x=document.getElementById(id).value;return x===""?null:Number(x)};return {...h,par:n("cPar"+i),hcpM:n("cHm"+i),hcpL:n("cHl"+i)}});
+    document.activeElement?.blur();
+    await write(()=>db.doc("config/course").update({holes}),"Course saved");
+  }
+  if(f.id==="pForm"){
+    const name=v("pName"); if(!name) return toast("Enter the golfer's name.");
+    const tbd=document.getElementById("pTbd")?.checked; const h=v("pHcp");
+    if(!tbd&&h==="") return toast("Enter a handicap or tick TBD.");
+    const handicap=tbd?null:Math.round(Number(h)*10)/10;
+    if(h!==""&&isNaN(handicap)) return toast("Handicap must be a number.");
+    const division=v("pDiv"); S.lastDiv=division;
+    const ed=S.editPlayer?S.players.find(p=>p.id===S.editPlayer):null;
+    document.activeElement?.blur();
+    if(ed){
+      const team=S.teams.find(t=>t.id===ed.teamId);
+      const teamId=team&&team.division===division?ed.teamId:null;
+      await write(()=>db.doc("players/"+ed.id).set({name,handicap,division,teamId}),"Golfer saved");
+      S.editPlayer=null; render();
+    }else{
+      await write(()=>db.collection("players").add({name,handicap,division,teamId:null}),name+" added");
+      const n=document.getElementById("pName"); if(n){n.value="";const hi=document.getElementById("pHcp");hi.value="";hi.disabled=false;document.getElementById("pTbd").checked=false;n.focus();}
+    }
+  }
+  if(f.id==="tForm"){
+    const name=v("tName"); if(!name) return toast("Enter a team name.");
+    const division=v("tDiv"); S.lastTDiv=division; document.activeElement?.blur();
+    const teeTime=v("tTime")||null;
+    await write(()=>db.collection("teams").add({name,division,teeTime}),name+" created");
+    render();
+  }
+});
+
+/* ---------- boot ---------- */
+render();
+(async()=>{
+  firebase.initializeApp(firebaseConfig);
+  const auth=firebase.auth();
+  db=firebase.firestore();
+  const fail=e=>console.warn(e);
+  auth.getRedirectResult().catch(()=>{});
+  await new Promise(done=>{ let first=true; auth.onAuthStateChanged(async u=>{
+    if(!u){ try{ await auth.signInAnonymously(); }catch(e){ console.warn(e); } return; }
+    authUser=u; myUid=u.uid;
+    const was=isAdmin; isAdmin=!u.isAnonymous && ADMIN_EMAILS.includes((u.email||"").toLowerCase());
+    if(!u.isAnonymous&&!isAdmin){ toast("That Google account isn't the tournament admin."); await auth.signOut(); return; }
+    if(isAdmin&&!was) toast("Signed in as admin");
+    if(!isAdmin&&S.view==="admin") S.view="welcome";
+    render(); if(first){first=false;done();}
+  }); });
+  let chatFirst=true;
+  db.collection("chat").orderBy("at","desc").limit(150).onSnapshot(s=>{
+    const prevIds=new Set((S.chat||[]).map(x=>x.id));
+    S.chat=s.docs.map(d=>({id:d.id,...d.data()}));
+    const seen=ls("chatSeen")||"", me=ls("chatMe");
+    const fresh=S.chat.filter(x=>!prevIds.has(x.id)&&!(x.kind!=="auto"&&x.pid===me)&&x.uid!==myUid);
+    if(S.chatOpen){markSeen();}
+    else{
+      S.chatUnread=S.chat.some(x=>(x.at||"")>seen&&!(x.kind!=="auto"&&x.pid===me));
+      if(!chatFirst&&fresh.length){const x=fresh.sort((a,b)=>(b.at||"").localeCompare(a.at||""))[0];
+        const p=S.players.find(q=>q.id===x.pid); toast(x.kind==="auto"?x.t:`💬 ${p?.name||"Someone"}: ${x.t}`);}
+    }
+    chatFirst=false; renderChat();
+  },fail);
+  db.collection("scores").onSnapshot(s=>{const m={};s.docs.forEach(d=>m[d.id]=d.data());S.scores=m;render();},fail);
+  db.collection("players").onSnapshot(s=>{S.players=s.docs.map(d=>({id:d.id,...d.data()}));render();},fail);
+  db.collection("teams").onSnapshot(s=>{S.teams=s.docs.map(d=>({id:d.id,...d.data()}));render();},fail);
+  db.doc("config/course").onSnapshot(s=>{S.course=s.exists?s.data():null;render();},fail);
+  db.doc("config/event").onSnapshot(s=>{S.event=s.exists?s.data():null;render();},fail);
+  db.doc("config/hero").onSnapshot(s=>{S.hero=s.exists?s.data():null;render();},fail);
+  db.doc("config/logo").onSnapshot(s=>{S.logo=s.exists?s.data():null;render();},fail);
+  render();
+})();
+</script>
+</body>
+</html>
