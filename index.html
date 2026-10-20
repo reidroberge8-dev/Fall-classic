@@ -914,7 +914,14 @@ function aEvent(){
         <input id="upLogo" type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-slot="logo">
         ${!S.logo?.off?`<button class="btn sm" type="button" data-act="clearimg" data-slot="logo">Use monogram instead</button>`:""}</div>
     </div>
-    <p class="note">A wide landscape photo works best. Photos are resized automatically before saving.</p>`
+    <p class="note">A wide landscape photo works best. Photos are resized automatically before saving.</p>
+    <div class="photo-slot" style="margin-top:6px"><label class="eyebrow" for="upHeckle">3-putt heckle sound</label>
+      <p class="note" style="margin:0">${S.heckle?.data?"Your recording plays on every 3-putt.":"Using the phone's voice: \u201cNice three-putt, ya jackass!\u201d Upload a short recording (MP3 or M4A, under 600 KB) to use your own."}</p>
+      <input id="upHeckle" type="file" accept="audio/*" data-slot="heckle">
+      <div class="row-actions" style="justify-content:flex-start">
+        <button class="btn sm" type="button" data-act="testheckle">▶ Play 3-putt sound</button>
+        ${S.heckle?.data?`<button class="btn sm" type="button" data-act="clearheckle">Use phone voice instead</button>`:""}
+      </div></div>`
     :""}
   </section>`;
 }
@@ -1048,7 +1055,7 @@ function renderBoard(){
 /* ---------- message ping ---------- */
 let actx=null;
 function soundOn(){ return ls("chatSound")!=="off"; }
-function unlockAudio(){ try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C) actx=new C(); }
+function unlockAudio(){ try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C){ actx=new C(); if(heckleSrc&&!heckleBuf) setTimeout(()=>loadHeckle(heckleSrc),0); } }
   if(actx&&actx.state==="suspended") actx.resume(); }catch(e){} }
 ["touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
 function sfxReady(){ if(!soundOn()) return null; unlockAudio(); return (actx&&actx.state==="running")?actx:null; }
@@ -1160,7 +1167,21 @@ SFX.ace=(a,t)=>{ const dur=3.2, out=a.createGain(); out.connect(a.destination); 
     c.connect(b); b.connect(cg); cg.connect(bus); c.start(st); c.stop(st+0.04); }
 };
 const SFX_RANK={ace:5,eagle:4,birdie:3,boo:2,ping:1};
-function playSfx(kind){ const a=sfxReady(); if(!a) return; try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
+let heckleBuf=null, heckleSrc=null;
+async function loadHeckle(dataUrl){ heckleSrc=dataUrl||null; heckleBuf=null; if(!dataUrl) return;
+  try{ unlockAudio(); if(!actx) return; const ab=await (await fetch(dataUrl)).arrayBuffer(); heckleBuf=await actx.decodeAudioData(ab); }catch(e){ console.warn("heckle clip",e); } }
+let speechUnlocked=false;
+function unlockSpeech(){ if(speechUnlocked||!window.speechSynthesis) return; try{ const u=new SpeechSynthesisUtterance(" "); u.volume=0; speechSynthesis.speak(u); speechUnlocked=true; }catch(e){} }
+["touchend","click"].forEach(ev=>document.addEventListener(ev,unlockSpeech,{passive:true}));
+function heckleVoice(){ const vs=(window.speechSynthesis&&speechSynthesis.getVoices())||[]; const en=vs.filter(v=>/^en/i.test(v.lang));
+  const pref=["Daniel","Alex","Fred","Aaron","Arthur","Rishi","Google UK English Male","Microsoft Guy","Microsoft David","Male"];
+  for(const n of pref){ const v=en.find(v=>v.name.includes(n)); if(v) return v; } return en[0]||vs[0]||null; }
+function heckle(){
+  if(heckleSrc&&heckleBuf&&actx){ try{ const src=actx.createBufferSource(), g=actx.createGain(); g.gain.value=1; src.buffer=heckleBuf; src.connect(g); g.connect(actx.destination); src.start(actx.currentTime+0.35); return; }catch(e){} }
+  if(!window.speechSynthesis) return;
+  try{ const u=new SpeechSynthesisUtterance("Nice three putt, ya jackass!"); const v=heckleVoice(); if(v) u.voice=v;
+    u.rate=1.08; u.pitch=0.55; u.volume=1; setTimeout(()=>{ try{ speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){} },450); }catch(e){} }
+function playSfx(kind){ const a=sfxReady(); if(!a) return; if(kind==="boo") heckle(); try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
   try{ (SFX[kind]||SFX.ping)(a,a.currentTime+0.02); }catch(e){} }
 function ping(){ playSfx("ping"); }
 function sysBanner(msg){ let el=document.getElementById("sysBanner");
@@ -1227,7 +1248,7 @@ function shoutouts(D){
     if(d.s===1) out.push({t:`🎯 HOLE IN ONE! ${p.name} aced #${D.n}!`,snd:"ace"});
     else if(diff<=-2) out.push({t:`🦅 ${p.name} eagled #${D.n}!`,snd:"eagle"});
     else if(diff===-1) out.push({t:`🐦 ${p.name} birdied #${D.n}`,snd:"birdie"});
-    if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. +$1 to the pot`,snd:"boo"});
+    if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. Nice ${d.p}-putt, ya jackass! +$1 to the pot`,snd:"boo"});
   }
   return out;
 }
@@ -1292,6 +1313,8 @@ app.addEventListener("click",async e=>{
   if(act==="home") return go("home");
   if(act==="welcome") return go("welcome");
   if(act==="division") return go("division");
+  if(act==="testheckle"){ unlockAudio(); unlockSpeech(); const was=ls("chatSound"); ls("chatSound","on"); playSfx("boo"); if(was) ls("chatSound",was); return; }
+  if(act==="clearheckle"){ await write(()=>db.doc("config/heckle").delete(),"Back to the phone voice"); return; }
   if(act==="clearimg"){ await write(()=>db.doc("config/"+b.dataset.slot).set({off:true}),"Photo removed"); return; }
   if(act==="start") return go("choose");
   if(act==="team") return go("team");
@@ -1371,7 +1394,15 @@ app.addEventListener("change",async e=>{
   if(inp.id==="pTbd"){const hi=document.getElementById("pHcp"); hi.disabled=inp.checked; if(inp.checked) hi.value=""; else hi.focus(); return;}
   if(inp.type==="time"&&inp.dataset.team){ const id=inp.dataset.team; const val=inp.value||null; inp.blur();
     await write(()=>db.doc("teams/"+id).update({teeTime:val}), val?"Tee time set to "+fmtTime(val):"Tee time cleared"); render(); return; } if(inp.type!=="file"||!inp.dataset.slot||!inp.files[0]) return;
-  const f=inp.files[0]; if(f.size>20*1024*1024) return toast("That photo is over 20 MB. Pick a smaller one.");
+  const f=inp.files[0];
+  if(inp.dataset.slot==="heckle"){
+    if(f.size>650*1024){ inp.value=""; return toast("That clip is too big. Keep it under 600 KB (a few seconds)."); }
+    toast("Uploading…");
+    try{ const data=await new Promise((res,rej)=>{const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(f);});
+      await db.doc("config/heckle").set({data}); toast("3-putt sound saved"); }
+    catch(err){ toast(err?.code==="permission-denied"?"Only the admin can change sounds.":"Couldn't save that clip. Try an MP3."); }
+    inp.value=""; return; }
+  if(f.size>20*1024*1024) return toast("That photo is over 20 MB. Pick a smaller one.");
   toast("Uploading…");
   try{ const data=await shrinkImage(f, inp.dataset.slot==="logo"?400:1600);
     await db.doc("config/"+inp.dataset.slot).set({data}); toast("Photo saved"); }
@@ -1466,6 +1497,7 @@ render();
   db.doc("config/course").onSnapshot(s=>{S.course=s.exists?s.data():DEFAULT_COURSE;render();},fail);
   db.doc("config/event").onSnapshot(s=>{S.event=s.exists?s.data():DEFAULT_EVENT;render();},fail);
   db.doc("config/hero").onSnapshot(s=>{S.hero=s.exists?s.data():null;render();},fail);
+  db.doc("config/heckle").onSnapshot(s=>{S.heckle=s.exists?s.data():null; loadHeckle(S.heckle?.data); render();},fail);
   db.doc("config/logo").onSnapshot(s=>{S.logo=s.exists?s.data():null;render();},fail);
   render();
 })();
