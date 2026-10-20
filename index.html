@@ -521,6 +521,12 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
     70%{box-shadow:0 0 0 9px rgba(255,59,59,0),inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.25)}
     100%{box-shadow:0 0 0 0 rgba(255,59,59,0),inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.25)}}
 }
+/* admin: rename team / edit golfer */
+.rename{display:flex;gap:8px;align-items:center;width:100%}
+.rename input{flex:1;min-width:0;font-size:16px;border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px;background:var(--bg)}
+.admin-team .team-head{flex-wrap:wrap;gap:8px}
+.admin-team .members li{grid-template-columns:1fr auto auto}
+.mem-actions{display:flex;gap:6px}
 </style>
 </head>
 <body>
@@ -1086,13 +1092,19 @@ function aTeams(){
     const free=S.players.filter(p=>p.division===d&&!S.teams.some(t=>t.id===p.teamId)).sort(byName);
     return `<section class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h2>${divName(d)} teams</h2><span class="muted num">${free.length} unassigned</span></div>
     ${ts.length?ts.map(t=>{const ps=teamPlayers(t.id);return `<div class="admin-team">
-      <div class="team-head" style="${d==="ladies"?"background:var(--ladies-soft)":""}"><h3>${esc(t.name)}</h3>
-        <button class="btn sm danger ${S.armed===t.id?"armed":""}" type="button" data-act="tdel" data-id="${esc(t.id)}">${S.armed===t.id?"Confirm":"Delete team"}</button></div>
+      <div class="team-head" style="${d==="ladies"?"background:var(--ladies-soft)":""}">
+        ${S.editTeam===t.id
+          ? `<form class="rename" data-team="${esc(t.id)}" id="tRenameForm"><input id="tRename" value="${esc(t.name)}" maxlength="40" aria-label="Team name" autocomplete="off">
+              <button class="btn sm primary" type="submit">Save</button><button class="btn sm" type="button" data-act="tcancel">Cancel</button></form>`
+          : `<h3>${esc(t.name)}</h3>
+        <div class="row-actions"><button class="btn sm" type="button" data-act="tedit" data-id="${esc(t.id)}">Rename</button>
+        <button class="btn sm danger ${S.armed===t.id?"armed":""}" type="button" data-act="tdel" data-id="${esc(t.id)}">${S.armed===t.id?"Confirm":"Delete"}</button></div>`}</div>
       <div class="body">
         <div class="field" style="flex-direction:row;align-items:center;gap:10px"><label for="tTime-${esc(t.id)}" style="flex:0 0 auto">Tee time</label>
           <input id="tTime-${esc(t.id)}" type="time" step="60" value="${esc(t.teeTime||"")}" data-team="${esc(t.id)}" style="max-width:160px"></div>
         ${ps.length?`<ul class="members">${ps.map(p=>`<li><span>${esc(p.name)}</span><span class="num" style="font-weight:700">${fmtH(p.handicap)}</span>
-          <button class="btn sm" type="button" data-act="tremove" data-id="${esc(p.id)}" aria-label="Remove ${esc(p.name)}">Remove</button></li>`).join("")}</ul>`:`<p class="muted">No golfers yet.</p>`}
+          <span class="mem-actions"><button class="btn sm" type="button" data-act="pedit-go" data-id="${esc(p.id)}" aria-label="Edit ${esc(p.name)}">Edit</button>
+          <button class="btn sm" type="button" data-act="tremove" data-id="${esc(p.id)}" aria-label="Remove ${esc(p.name)}">Remove</button></span></li>`).join("")}</ul>`:`<p class="muted">No golfers yet.</p>`}
         <div class="muted num" style="font-size:14px">${ps.length}/4 golfers · Team HCP ${teamHcp(t.id)}</div>
         ${ps.length<4?(free.length?`<div class="addrow"><select id="add-${esc(t.id)}" aria-label="Golfer to add to ${esc(t.name)}"><option value="">Add a golfer…</option>${free.map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${fmtH(p.handicap)})</option>`).join("")}</select>
           <button class="btn sm primary" type="button" data-act="tadd" data-id="${esc(t.id)}">Add</button></div>`:`<p class="note">All ${divName(d).toLowerCase()} golfers are on a team. Add more in Players.</p>`):""}
@@ -1501,6 +1513,9 @@ app.addEventListener("click",async e=>{
     await write(()=>db.doc("players/"+id).delete(),"Golfer deleted"); return; }
   if(act==="tdel"){ if(S.armed!==id){S.armed=id;return render();} S.armed=null;
     await write(async()=>{ for(const p of teamPlayers(id)) await db.doc("players/"+p.id).update({teamId:null}); await db.doc("teams/"+id).delete(); },"Team deleted"); return; }
+  if(act==="tedit"){ S.editTeam=id; S.armed=null; render(); const i=document.getElementById("tRename"); if(i){i.focus(); i.select();} return; }
+  if(act==="tcancel"){ S.editTeam=null; document.activeElement?.blur(); return render(); }
+  if(act==="pedit-go"){ S.adminTab="players"; S.editPlayer=id; S.armed=null; render(); window.scrollTo(0,0); setTimeout(()=>document.getElementById("pName")?.focus(),50); return; }
   if(act==="tremove"){ await write(()=>db.doc("players/"+id).update({teamId:null}),"Removed from team"); return; }
   if(act==="tadd"){ const s=document.getElementById("add-"+id); const pid=s&&s.value; if(!pid) return toast("Pick a golfer first.");
     if(teamPlayers(id).length>=4) return toast("That team already has four golfers.");
@@ -1563,6 +1578,11 @@ app.addEventListener("submit",async e=>{
       await write(()=>db.collection("players").add({name,handicap,division,teamId:null}),name+" added");
       const n=document.getElementById("pName"); if(n){n.value="";const hi=document.getElementById("pHcp");hi.value="";hi.disabled=false;document.getElementById("pTbd").checked=false;n.focus();}
     }
+  }
+  if(f.id==="tRenameForm"){
+    const name=document.getElementById("tRename").value.trim(); if(!name) return toast("Enter a team name.");
+    const id=f.dataset.team; document.activeElement?.blur(); S.editTeam=null;
+    await write(()=>db.doc("teams/"+id).update({name}),"Team renamed to "+name); render(); return;
   }
   if(f.id==="tForm"){
     const name=v("tName"); if(!name) return toast("Enter a team name.");
