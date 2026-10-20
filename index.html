@@ -804,7 +804,7 @@ function vEntry(t,ps){
     <div class="hole-sum num">${full?`Team on this hole: <b>${tscore}</b> net (${fmtPar(tscore-h.par*k)})`:`Tap + or − to enter each golfer's score and putts. The first tap sets par for score and 2 for putts.`}</div>
     <div class="row-actions save-bar">
       ${allIn?`<button class="btn" type="button" data-act="clearhole">Clear hole</button>`:""}
-      <button class="btn primary" type="button" data-act="savehole" style="flex:1" ${ready?"":"disabled"}>${ready?`${allIn?"Update":"Save"} hole ${n}${n<18?" & next":""}`:`Enter all scores and putts`}</button>
+      <button class="btn primary" type="button" data-act="savehole" style="flex:1" ${ready?"":"disabled"}>${ready?`${allIn?"Update":"Save"} scores${n<18?" & go to next hole":""}`:`Enter all scores and putts`}</button>
     </div>
   </section>`;
 }
