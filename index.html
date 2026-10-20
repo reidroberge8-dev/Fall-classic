@@ -580,6 +580,7 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .lb-grid{grid-template-columns:22px minmax(0,1fr) 64px 54px;gap:8px}
 @media (max-width:400px){.lb-grid{grid-template-columns:18px minmax(0,1fr) 58px 50px;gap:6px}}
 .lb-grid>span:nth-child(3),.lb-grid>span:nth-child(4){text-align:center}
+.team-top{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 </style>
 </head>
 <body>
@@ -1439,14 +1440,15 @@ function firstOpen(tid){const ps=teamPlayers(tid);for(let n=1;n<=18;n++){if(!ps.
 function fitOneLine(root){ (root||document).querySelectorAll(".fit1").forEach(el=>{
   const max=+el.dataset.max||20, min=+el.dataset.min||11; let size=max; el.style.fontSize=size+"px";
   if(!el.clientWidth) return;
-  while(size>min&&el.scrollWidth>el.clientWidth+0.5){ size-=0.5; el.style.fontSize=size+"px"; } }); }
+  const rg=document.createRange(); rg.selectNodeContents(el); const over=()=>el.scrollWidth>el.clientWidth||rg.getBoundingClientRect().width>el.clientWidth;
+  while(size>min&&over()){ size-=0.5; el.style.fontSize=size+"px"; } }); }
 // Shrink the two game titles together (same size) until both fit on one line
 function fitGameTitles(){ const bs=[...document.querySelectorAll(".game-list b")]; if(!bs.length) return;
   let size=20; const fits=()=>bs.every(b=>b.scrollWidth<=b.parentElement.clientWidth-24);
   bs.forEach(b=>b.style.fontSize=size+"px");
   while(size>12&&!fits()){ size-=0.5; bs.forEach(b=>b.style.fontSize=size+"px"); } }
 window.addEventListener("resize",()=>{fitGameTitles(); fitOneLine();});
-if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>fitGameTitles());
+if(document.fonts){ const refit=()=>{fitGameTitles(); fitOneLine(); fitHoleFacts();}; if(document.fonts.ready) document.fonts.ready.then(refit); if(document.fonts.addEventListener) document.fonts.addEventListener("loadingdone",refit); }
 // Size par/yds/hcp so their block matches the height of "HOLE N" (top and bottom aligned)
 function fitHoleFacts(){
   const head=document.querySelector(".hole-head"); if(!head) return;
