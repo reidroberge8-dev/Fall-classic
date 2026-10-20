@@ -951,9 +951,7 @@ function vTeamCard(t,ps,bare){
     return `<div class="scroll"><table class="grid num putt-grid"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">Tot</th></tr></thead><tbody>${ps.map(prow).join("")}</tbody></table></div>`;};
   const pcount=p=>{let one=0,three=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(!e)continue;const v=Number(e.p);if(v===1)one++;else if(v>=3)three++;}return {one,three};};
   const putts=`<table class="card-table num"><thead><tr><th>Golfer</th><th class="r">1-putts</th><th class="r">3+ putts</th></tr></thead><tbody>${ps.map(p=>{const c=pcount(p);return `<tr><td>${esc(p.name)}</td><td class="r p1"><b>${c.one}</b></td><td class="r p3"><b>${c.three}</b></td></tr>`}).join("")}</tbody></table>`;
-  const inner=`<div class="sc-cap"><b>Front 9</b> · Best <b class="n">1</b> net score</div>${half(1,9,"Out")}<div class="sc-cap"><b>Back 9</b> · Best <b class="n">2</b> net scores</div>${half(10,18,"In")}
-    <p class="note">Big number is gross; small raised number is net. Highlighted scores count for the team. Team row is net.</p>
-    <div class="sc-legend"><span><span class="mk eg">2</span>Eagle</span><span><span class="mk bd">3</span>Birdie</span><span><span class="mk bg">5</span>Bogey</span><span><span class="mk db">6</span>Double</span><span><span class="mk tb">7</span>Triple+</span></div>`;
+  const inner=`<div class="sc-cap"><b>Front 9</b> · Best <b class="n">1</b> net score</div>${half(1,9,"Out")}<div class="sc-cap"><b>Back 9</b> · Best <b class="n">2</b> net scores</div>${half(10,18,"In")}`;
   if(bare) return inner;
   return `<section class="panel"><h2>Team scorecard</h2>${inner}<h3>Putts</h3>${putts}</section>
     <button class="btn" data-act="leave" type="button">This isn't my team</button>`;
