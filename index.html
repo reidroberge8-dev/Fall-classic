@@ -510,6 +510,9 @@ const firebaseConfig = {
   appId: "1:526967710619:web:a32659bdecb7249e98373e"
 };
 const ADMIN_EMAILS = ["reidroberge8@gmail.com"];
+// Built-in Fairview Farm scorecard and event defaults, used until the database has its own copy.
+const DEFAULT_COURSE = {"address":"300 Hill Road, Harwinton, CT","city":"Harwinton, CT","holes":[{"hcpL":10,"hcpM":6,"n":1,"par":4},{"hcpL":6,"hcpM":2,"n":2,"par":4},{"hcpL":2,"hcpM":12,"n":3,"par":5},{"hcpL":18,"hcpM":18,"n":4,"par":3},{"hcpL":12,"hcpM":4,"n":5,"par":4},{"hcpL":4,"hcpM":16,"n":6,"par":5},{"hcpL":16,"hcpM":14,"n":7,"par":3},{"hcpL":8,"hcpM":10,"n":8,"par":4},{"hcpL":14,"hcpM":8,"n":9,"par":4},{"hcpL":15,"hcpM":3,"n":10,"par":3},{"hcpL":5,"hcpM":7,"n":11,"par":4},{"hcpL":17,"hcpM":15,"n":12,"par":3},{"hcpL":9,"hcpM":5,"n":13,"par":4},{"hcpL":13,"hcpM":17,"n":14,"par":4},{"hcpL":11,"hcpM":9,"n":15,"par":4},{"hcpL":1,"hcpM":1,"n":16,"par":5},{"hcpL":7,"hcpM":13,"n":17,"par":4},{"hcpL":3,"hcpM":11,"n":18,"par":5}],"name":"Fairview Farm Golf Course","phone":"860.689.1000","tees":[{"name":"Blue","rating":71.5,"slope":126,"yards":[410,405,525,230,365,490,185,365,385,210,360,186,370,330,400,565,325,530]},{"name":"White","rating":69.5,"slope":121,"yards":[380,355,500,160,330,450,155,350,375,187,350,175,340,320,385,545,307,510]},{"name":"Gold","rating":67.2,"slope":116,"yards":[355,315,480,150,310,410,145,310,285,155,340,155,330,310,375,520,300,460]},{"name":"Gold (Ladies)","rating":71.9,"slope":123,"yards":[355,315,480,150,310,410,145,310,285,155,340,155,330,310,375,520,300,460]},{"name":"Red","rating":66,"slope":110,"yards":[300,270,400,140,235,340,135,270,200,100,250,140,320,300,275,460,295,400]}]};
+const DEFAULT_EVENT = {"course":"Fairview Farm Golf Course, Harwinton, CT","date":"2026-10-31","format":"","ladiesTee":"Red","menTee":"White","name":"Fairview Farm Fall Classic","rules":"","welcome":""};
 const DEFAULT_RULES = [
   "Teams of four golfers play in either the Men's or the Ladies' division.",
   "Handicaps are set by the tournament committee and can't be changed on the course.",
@@ -1252,7 +1255,7 @@ app.addEventListener("submit",async e=>{
   if(f.id==="cForm"){
     const holes=S.course.holes.map((h,i)=>{const n=id=>{const x=document.getElementById(id).value;return x===""?null:Number(x)};return {...h,par:n("cPar"+i),hcpM:n("cHm"+i),hcpL:n("cHl"+i)}});
     document.activeElement?.blur();
-    await write(()=>db.doc("config/course").update({holes}),"Course saved");
+    await write(()=>db.doc("config/course").set({...S.course,holes}),"Course saved");
   }
   if(f.id==="pForm"){
     const name=v("pName"); if(!name) return toast("Enter the golfer's name.");
@@ -1316,8 +1319,8 @@ render();
   db.collection("scores").onSnapshot(s=>{const m={};s.docs.forEach(d=>m[d.id]=d.data());S.scores=m;render();},fail);
   db.collection("players").onSnapshot(s=>{S.players=s.docs.map(d=>({id:d.id,...d.data()}));render();},fail);
   db.collection("teams").onSnapshot(s=>{S.teams=s.docs.map(d=>({id:d.id,...d.data()}));render();},fail);
-  db.doc("config/course").onSnapshot(s=>{S.course=s.exists?s.data():null;render();},fail);
-  db.doc("config/event").onSnapshot(s=>{S.event=s.exists?s.data():null;render();},fail);
+  db.doc("config/course").onSnapshot(s=>{S.course=s.exists?s.data():DEFAULT_COURSE;render();},fail);
+  db.doc("config/event").onSnapshot(s=>{S.event=s.exists?s.data():DEFAULT_EVENT;render();},fail);
   db.doc("config/hero").onSnapshot(s=>{S.hero=s.exists?s.data():null;render();},fail);
   db.doc("config/logo").onSnapshot(s=>{S.logo=s.exists?s.data():null;render();},fail);
   render();
