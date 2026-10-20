@@ -527,6 +527,9 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .admin-team .team-head{flex-wrap:wrap;gap:8px}
 .admin-team .members li{grid-template-columns:1fr auto auto}
 .mem-actions{display:flex;gap:6px}
+.navrow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.navrow.end{justify-content:flex-end}
+.back.fwd{align-self:auto}
 </style>
 </head>
 <body>
@@ -642,8 +645,7 @@ function vHome(){
   const ev=S.event||{}, d=S.div;
   const meta=[ev.date&&`<span>${esc(fmtDate(ev.date))}</span>`, ev.course&&`<span>${esc(ev.course)}</span>`, ev.format&&`<span>${esc(ev.format)}</span>`].filter(Boolean).join("");
   return `
-  <button class="back" data-act="division" type="button">← Division</button>
-  <button class="btn primary big oneline" data-act="start" type="button">Choose your team</button>
+  <div class="navrow"><button class="back" data-act="division" type="button">← Division</button><button class="back fwd" data-act="start" type="button">Continue to teams →</button></div>
   <section class="hero">
     <span class="chip ${d==="ladies"?"ladies":""}" style="align-self:flex-start">${divName(d)} division</span>
     <h1>Today's games</h1>
@@ -665,7 +667,7 @@ function vHome(){
     <div class="bi-item"><b class="num">+$1</b><span>Per three-putt or worse, added to the pot.</span></div>
   </section>
   ${payoutsPanel(d)}
-  <button class="btn primary big oneline" data-act="start" type="button">Choose your team</button>`;
+  <div class="navrow end"><button class="back fwd" data-act="start" type="button">Continue to teams →</button></div>`;
 }
 
 function payoutsPanel(d){
