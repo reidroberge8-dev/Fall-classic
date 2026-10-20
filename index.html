@@ -581,6 +581,16 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 @media (max-width:400px){.lb-grid{grid-template-columns:18px minmax(0,1fr) 58px 50px;gap:6px}}
 .lb-grid>span:nth-child(3),.lb-grid>span:nth-child(4){text-align:center}
 .team-top{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.hole-nav{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;gap:6px}
+.hnav{width:48px;height:48px;border-radius:50%;border:1.5px solid var(--green);background:var(--surface);color:var(--green);font-size:34px;font-weight:700;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0 0 4px;box-shadow:0 2px 0 var(--green);transition:transform .08s,box-shadow .08s}
+.hnav:active{transform:translateY(2px);box-shadow:0 0 0 var(--green)}
+.hnav:disabled{opacity:.3;cursor:default;box-shadow:none}
+.hn-mid{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;min-width:0}
+.hn-mid .sc-cap{margin:0;white-space:nowrap;font-size:12px}
+.hn-mid h2{font-size:clamp(32px,10.5vw,44px);line-height:1.05;white-space:nowrap;margin:0}
+.hn-status{font-size:13px;font-weight:600;color:var(--muted)}
+.hn-status.done{color:var(--green)}
+.hn-facts{justify-content:center;gap:28px}
 </style>
 </head>
 <body>
@@ -907,9 +917,8 @@ function vEntry(t,ps){
   // Another phone on this team saved this hole while we were on it: tell this phone and offer the next hole
   const hkey=t.id+":"+n;
   if(S.draft.startedEmpty&&allIn&&!(S.savedHere||{})[hkey]&&!(S.ackHole||{})[hkey]){
-    const strip0=Array.from({length:18},(_,i)=>{const m=i+1;const done=ps.every(p=>entry(p.id,m));return `<button type="button" class="hs ${m===n?"cur":""} ${done?"done":""}" data-act="hole" data-n="${m}">${m}</button>`}).join("");
     return `<section class="panel entry"><h2 class="fit1" data-max="28" data-min="16">Hole by Hole Scorecard</h2>
-      <div class="hs-row" role="group" aria-label="Holes">${strip0}</div>
+      ${holeNav(n,ps)}
       <div class="taken" role="alert">
         <div class="taken-ic" aria-hidden="true">✅</div>
         <h2>Hole ${n} is already in</h2>
@@ -926,8 +935,6 @@ function vEntry(t,ps){
   const nets=ps.filter(p=>v[p.id].s!=null).map(p=>({id:p.id,v:v[p.id].s-strokes(p,n)})).sort((a,b)=>a.v-b.v);
   const full=nets.length===ps.length;
   const best=full?nets.slice(0,k):[], cntIds=best.map(x=>x.id), tscore=best.reduce((a,x)=>a+x.v,0);
-  const strip=Array.from({length:18},(_,i)=>{const m=i+1;const done=ps.every(p=>entry(p.id,m));const part=!done&&ps.some(p=>entry(p.id,m));
-    return `<button type="button" class="hs ${m===n?"cur":""} ${done?"done":part?"part":""}" data-act="hole" data-n="${m}" aria-label="Hole ${m}${done?", entered":""}">${m}</button>`}).join("");
   const rows=ps.map(p=>{const d=v[p.id], kk=strokes(p,n), nv=d.s==null?"–":d.s-kk, pid=esc(p.id);
     return `<div class="prow ${cntIds.includes(p.id)?"counts":""} ${d.s==null||d.p==null?"todo":"ready"}">
       <div class="pname"><b>${esc(p.name)}</b><span class="num">${dots(kk)}${kk?` ${kk>0?kk+" stroke"+(kk>1?"s":""):"gives "+(-kk)}`:"no stroke"} · net <b>${nv}</b></span></div>
@@ -935,11 +942,8 @@ function vEntry(t,ps){
       <div class="mini"><span class="lbl">Putts</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="-1" aria-label="${esc(p.name)} putts down">−</button><output class="num ${d.p==null?"blank":d.p<=1?"p1":d.p===2?"p2":"p3"}">${d.p??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="1" aria-label="${esc(p.name)} putts up">+</button></div></div>
     </div>`}).join("");
   return `<section class="panel entry"><h2 class="fit1" data-max="28" data-min="16">Hole by Hole Scorecard</h2>
-    <div class="hs-row" role="group" aria-label="Holes">${strip}</div>
-    <div class="hole-head">
-      <div><span class="sc-cap" style="display:block;margin:0">${n<=9?`<b>Front 9</b> · Best <b class="n">1</b> net score`:`<b>Back 9</b> · Best <b class="n">2</b> net scores`}</span><h2 style="font-size:40px">Hole ${n}</h2></div>
-      <div class="hole-facts num"><span><b>${h.par}</b><small>Par</small></span><span><b>${teeFor(t.division)?.yards?.[n-1]??"–"}</b><small>Yds</small></span><span><b>${h[hcpKey(t.division)]??"–"}</b><small>HCP</small></span></div>
-    </div>
+    ${holeNav(n,ps)}
+    <div class="hole-facts hn-facts num"><span><b>${h.par}</b><small>Par</small></span><span><b>${teeFor(t.division)?.yards?.[n-1]??"–"}</b><small>Yds</small></span><span><b>${h[hcpKey(t.division)]??"–"}</b><small>HCP</small></span></div>
     <div class="prows">${rows}</div>
     <div class="hole-sum num">${full?`Team on this hole: <b>${tscore}</b> net (${fmtPar(tscore-h.par*k)})`:`Tap + or − to enter each golfer's score and putts. The first tap sets par for score and 2 for putts.`}</div>
     <div class="row-actions save-bar">
@@ -1136,6 +1140,15 @@ function aPlayers(){
     <p class="note">For a plus handicap, enter a negative number (−2 shows as +2). Tick TBD if the handicap isn't known yet; that golfer gets no strokes until it's set.</p>
     <div class="row-actions">${ed?`<button class="btn" type="button" data-act="pcancel">Cancel</button>`:""}<button class="btn primary" type="submit">${ed?"Save golfer":"Add golfer"}</button></div>
   </form>${groups}`;
+}
+function holeNav(n,ps){
+  const done=m=>ps.every(p=>entry(p.id,m));
+  const cap=n<=9?`<b>Front 9</b> · Best <b class="n">1</b> net score`:`<b>Back 9</b> · Best <b class="n">2</b> net scores`;
+  return `<div class="hole-nav">
+    <button type="button" class="hnav" data-act="hole" data-n="${n-1}" ${n<=1?"disabled":""} aria-label="Previous hole${n>1?`, hole ${n-1}`:""}"><span aria-hidden="true">‹</span></button>
+    <div class="hn-mid"><span class="sc-cap">${cap}</span><h2>Hole ${n}</h2><span class="hn-status ${done(n)?"done":""}">${done(n)?"✓ Scores entered":"Not entered yet"}</span></div>
+    <button type="button" class="hnav" data-act="hole" data-n="${n+1}" ${n>=18?"disabled":""} aria-label="Next hole${n<18?`, hole ${n+1}`:""}"><span aria-hidden="true">›</span></button>
+  </div>`;
 }
 function anyScores(d){ return S.players.some(p=>p.division===d&&Object.keys(S.scores[p.id]?.h||{}).length); }
 function aTeams(){
