@@ -628,7 +628,7 @@ function vHome(){
     <h2>Two games, one round</h2>
     <p>Two games run at the same time during today's round.</p>
     <div class="game-list">
-      <div><b>1 · Team Game</b><span>${d==="ladies"?"Teams of four playing a shamble: everyone tees off, the team picks the best drive, then each player plays her own ball in. Front 9: the team's best net score counts. Back 9: the best 2 net scores count.":"Teams of four, everyone plays their own ball. Front 9: the team's best net score counts. Back 9: the best 2 net scores count."} <strong class="auto-note">Just enter scores and putts. The app does the rest!</strong></span></div>
+      <div><b>1 · Team Competition</b><span>${d==="ladies"?"Teams of four playing a shamble: everyone tees off, the team picks the best drive, then each player plays her own ball in. Front 9: the team's best net score counts. Back 9: the best 2 net scores count.":"Teams of four, everyone plays their own ball. Front 9: the team's best net score counts. Back 9: the best 2 net scores count."} <strong class="auto-note">Just enter scores and putts. The app does the rest!</strong></span></div>
       <div><b>2 · 3-Putt Poker</b><span>A putting side game. Putt everything out (no gimmes) and record every player's putts on each hole. Every 3-putt or worse costs that player $1 to the pot.</span></div>
     </div>
   </section>
@@ -644,7 +644,7 @@ function payoutsPanel(d){
   const potRow=`<div class="payrow poker"><span class="place">3-Putt Poker pot</span><span class="amt num">$${d==="ladies"?40:40}</span><span class="per">+$1 per three-putt</span></div>`;
   return `  <section class="panel">
     <h2>Payouts</h2>
-    ${d==="ladies"?`<p class="note">No team payout for the ladies' Team Game.</p>
+    ${d==="ladies"?`<p class="note">No team payout for the ladies' Team Competition.</p>
       <div class="payrow"><span class="place">Lowest total putts</span><span class="amt num">$20</span><span class="per">Individual prize</span></div>
       <div class="payrow"><span class="place">Lowest net score</span><span class="amt num">$20</span><span class="per">Individual prize</span></div>
       ${potRow}
@@ -664,7 +664,7 @@ function vRulesModal(){
     <button type="button" data-act="rdiv" data-div="men" aria-pressed="${d==="men"}">Men's</button>
     <button type="button" data-act="rdiv" data-div="ladies" aria-pressed="${d==="ladies"}">Ladies'</button></div>
   <section class="panel">
-    <div><div class="eyebrow">Main game</div><h2>Team Game</h2></div>
+    <div><div class="eyebrow">Main game</div><h2>Team Competition</h2></div>
     <ol class="rules">${list.map(r=>`<li><span>${esc(r).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</span></li>`).join("")}</ol>
     ${custom?"":`<p class="note">These are starter rules. ${isAdmin?"Edit them in Admin → Event &amp; rules.":"The tournament admin will post the final rules."}</p>`}
   </section>
