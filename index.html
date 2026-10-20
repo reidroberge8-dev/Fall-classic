@@ -450,6 +450,20 @@ details.course:not([open]){gap:0}
 .tee-top{display:flex;flex-direction:column;align-items:flex-end;font-family:var(--display);font-weight:700;font-size:20px;line-height:1.05;white-space:nowrap;flex:0 0 auto}
 .tee-top small{font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .auto-note{color:var(--green);font-weight:800}
+.pick-modal{align-items:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.dialog{position:relative;background:var(--bg);width:100%;max-width:420px;border-radius:18px;padding:22px 18px 18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.dialog h2{font-size:30px}
+.pick-card{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.pick-head{display:flex;flex-direction:column;gap:2px;padding:12px 14px;background:var(--green-soft)}
+.pick-head b{font-family:var(--display);font-size:22px;text-transform:uppercase;letter-spacing:.02em;min-width:0}
+.pick-head span{font-weight:700;white-space:nowrap;font-size:14px}
+.pick-card ul{list-style:none;margin:0;padding:4px 14px 8px}
+.pick-card li{display:flex;justify-content:space-between;padding:7px 0;border-top:1px dashed var(--line)}
+.pick-card li:first-child{border-top:0}
+.pick-card li span:last-child{font-weight:700}
+.big-confirm{min-height:54px;font-size:18px}
+@media (prefers-reduced-motion:no-preference){.dialog{animation:pop .18s ease-out}}
+@keyframes pop{from{transform:scale(.96)}to{transform:none}}
 /* ---- Mobile tuning ---- */
 @media (max-width:520px){
   .brand{font-size:0;flex:0 0 auto;width:30px;overflow:visible}
@@ -504,6 +518,10 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
   <div class="empty"><b>Loading the tournament…</b></div>
 </div>
 <footer class="foot" id="foot"><button type="button" id="footAdmin">Tournament admin</button><button type="button" id="footSignIn">Admin sign-in</button><button type="button" id="footSignOut">Sign out</button></footer></main>
+<div class="modal pick-modal" id="pickModal" hidden>
+  <div class="modal-back" data-pact="cancel"></div>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="pickTitle" id="pickBody"></div>
+</div>
 <div class="modal" id="chatModal" hidden>
   <div class="modal-back" data-mact="close"></div>
   <div class="sheet chat-sheet" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
@@ -599,7 +617,7 @@ function vHome(){
   const meta=[ev.date&&`<span>${esc(fmtDate(ev.date))}</span>`, ev.course&&`<span>${esc(ev.course)}</span>`, ev.format&&`<span>${esc(ev.format)}</span>`].filter(Boolean).join("");
   return `
   <button class="back" data-act="division" type="button">← Division</button>
-  <button class="btn primary big oneline" data-act="start" type="button">Click here to start round</button>
+  <button class="btn primary big oneline" data-act="start" type="button">Choose your team</button>
   <section class="hero">
     <span class="chip ${d==="ladies"?"ladies":""}" style="align-self:flex-start">${divName(d)} division</span>
     <h1>Today's games</h1>
@@ -619,7 +637,7 @@ function vHome(){
     <div class="bi-item"><b class="num">+$1</b><span>Per three-putt or worse, added to the pot.</span></div>
   </section>
   ${payoutsPanel(d)}
-  <button class="btn primary big oneline" data-act="start" type="button">Click here to start round</button>`;
+  <button class="btn primary big oneline" data-act="start" type="button">Choose your team</button>`;
 }
 
 function payoutsPanel(d){
@@ -1302,6 +1320,22 @@ function shoutouts(D){
   }
   return out;
 }
+function openPick(id){
+  const t=S.teams.find(x=>x.id===id); if(!t) return;
+  const ps=teamPlayers(id);
+  document.getElementById("pickBody").innerHTML=`
+    <div class="eyebrow">${divName(t.division)} division</div>
+    <h2 id="pickTitle">Is this your team?</h2>
+    <div class="pick-card">
+      <div class="pick-head"><b>${esc(t.name)}</b>${t.teeTime?`<span class="num">Tee time ${fmtTime(t.teeTime)}</span>`:""}</div>
+      <ul>${ps.map(p=>`<li><span>${esc(p.name)}</span><span class="num">${fmtH(p.handicap)}</span></li>`).join("")||"<li><span class='muted'>No golfers yet</span></li>"}</ul>
+    </div>
+    <button class="btn primary big-confirm" type="button" data-pact="confirm" data-id="${esc(id)}">Confirm &amp; start round</button>
+    <button class="btn" type="button" data-pact="cancel">Pick a different team</button>`;
+  document.getElementById("pickModal").hidden=false; document.documentElement.style.overflow="hidden";
+  document.querySelector("#pickModal [data-pact=confirm]")?.focus();
+}
+function closePick(){ document.getElementById("pickModal").hidden=true; if(!S.boardOpen&&!S.rulesOpen&&!S.chatOpen) document.documentElement.style.overflow=""; }
 function renderRules(){
   const m=document.getElementById("rulesModal"); m.hidden=!S.rulesOpen;
   if(!S.rulesOpen) return;
@@ -1324,8 +1358,13 @@ document.getElementById("lbModal").addEventListener("click",e=>{
 });
 document.getElementById("lbModal").addEventListener("toggle",e=>{const dt=e.target;if(!dt.classList?.contains("lb-row"))return;const id=dt.dataset.team;
   if(dt.open)S.openTeams.add(id);else S.openTeams.delete(id); if(dt.open&&!dt.querySelector(".lb-body").innerHTML.trim()) renderBoard();},true);
-document.addEventListener("keydown",e=>{if(e.key!=="Escape")return; if(S.chatOpen)closeChat(); else if(S.rulesOpen)closeRules(); else if(S.boardOpen)closeBoard();});
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return; if(!document.getElementById("pickModal").hidden)return closePick(); if(S.chatOpen)closeChat(); else if(S.rulesOpen)closeRules(); else if(S.boardOpen)closeBoard();});
 document.getElementById("navChat").onclick=()=>openChat();
+document.getElementById("pickModal").addEventListener("click",e=>{
+  const b=e.target.closest("[data-pact]"); if(!b) return;
+  if(b.dataset.pact==="cancel") return closePick();
+  if(b.dataset.pact==="confirm"){ const id=b.dataset.id; closePick(); S.teamId=id; ls("myTeam",id); S.hole=firstOpen(id); S.draft=null; toast("Let's go! Good luck out there."); go("team"); }
+});
 document.getElementById("chatModal").addEventListener("click",async e=>{
   if(e.target.closest("[data-mact=close]")) return closeChat();
   const b=e.target.closest("[data-act]"); if(!b) return;
@@ -1394,7 +1433,7 @@ app.addEventListener("click",async e=>{
   if(act==="clearhole"){const D=S.draft;if(!D)return;b.disabled=true;
     await write(async()=>{for(const pid of Object.keys(D.v)) if(S.scores[pid]) await db.doc("scores/"+pid).update({["h."+D.n]:firebase.firestore.FieldValue.delete()});},`Hole ${D.n} cleared`);S.draft=null;render();return;}
   if(act==="div"){S.div=b.dataset.div;ls("myDiv",S.div);return render();}
-  if(act==="pick"){S.teamId=id;ls("myTeam",id);S.hole=firstOpen(id);S.draft=null;return go("team");}
+  if(act==="pick"){ if(S.teamId===id){ S.hole=firstOpen(id);S.draft=null;return go("team"); } return openPick(id); }
   if(act==="leave"){S.teamId=null;ls("myTeam",null);return go("choose");}
   if(act==="import"){
     S.iTest=document.getElementById("iTest")?.checked; S.importing=true; render();
