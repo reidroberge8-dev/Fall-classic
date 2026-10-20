@@ -427,6 +427,9 @@ details.course:not([open]){gap:0}
 .sh-actions{display:flex;gap:8px;align-items:center}
 .sndbtn{font-size:18px}
 .sndbtn[aria-pressed="false"]{opacity:.7}
+.tscore{font-size:12px;font-weight:800;padding:1px 6px;border-radius:999px;background:var(--sunk);color:var(--fg)}
+.tscore.under{background:var(--green);color:var(--green-ink)}
+.tscore.over{background:var(--danger);color:#fff}
 /* ---- Mobile tuning ---- */
 @media (max-width:520px){
   .brand{font-size:0;flex:0 0 auto;width:30px;overflow:visible}
@@ -1222,7 +1225,8 @@ function renderChat(){
   body.innerHTML=msgs.length?msgs.map(x=>{
     if(x.kind==="auto") return `<div class="msg auto"><span>${esc(x.t)}</span><time>${fmtClock(x.at)}</time>${isAdmin?`<button type="button" class="mdel ${S.armed==="m"+x.id?"armed":""}" data-act="chatdel" data-id="${esc(x.id)}" aria-label="Delete message">${S.armed==="m"+x.id?"Delete?":"×"}</button>`:""}</div>`;
     const p=S.players.find(q=>q.id===x.pid), t=p&&S.teams.find(q=>q.id===p.teamId), mine=me&&x.pid===me.id;
-    return `<div class="msg ${mine?"mine":""}"><div class="who">${esc(p?.name||"Someone")}${t?` <span>· ${esc(t.name)}</span>`:""}<time>${fmtClock(x.at)}</time>${isAdmin?`<button type="button" class="mdel ${S.armed==="m"+x.id?"armed":""}" data-act="chatdel" data-id="${esc(x.id)}" aria-label="Delete message">${S.armed==="m"+x.id?"Delete?":"×"}</button>`:""}</div><div class="bubble">${esc(x.t)}</div></div>`;
+    const tt=t&&teamTotals(t);
+    return `<div class="msg ${mine?"mine":""}"><div class="who">${esc(p?.name||"Someone")}${t?` <span>· ${esc(t.name)}</span>${tt.thru?` <b class="tscore ${tt.toPar<0?"under":tt.toPar>0?"over":""}">${fmtPar(tt.toPar)}</b>`:""}`:""}<time>${fmtClock(x.at)}</time>${isAdmin?`<button type="button" class="mdel ${S.armed==="m"+x.id?"armed":""}" data-act="chatdel" data-id="${esc(x.id)}" aria-label="Delete message">${S.armed==="m"+x.id?"Delete?":"×"}</button>`:""}</div><div class="bubble">${esc(x.t)}</div></div>`;
   }).join(""):`<div class="empty"><b>No messages yet</b><span>Start the trash talk.</span></div>`;
   if(atBottom||S.chatJump){body.scrollTop=body.scrollHeight;S.chatJump=false;}
 }
