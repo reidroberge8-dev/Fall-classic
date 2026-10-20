@@ -396,7 +396,8 @@ details.course:not([open]){gap:0}
 .bolt{display:inline-block;font-size:.95em;line-height:1}
 @media (prefers-reduced-motion:no-preference){.sheet-head .bolt{animation:zap 2.4s ease-in-out infinite}}
 @keyframes zap{0%,80%,100%{opacity:1}85%{opacity:.35}90%{opacity:1}95%{opacity:.5}}
-.chatbtn{position:relative;padding:6px 12px;font-size:17px;line-height:1}
+.chatbtn{position:relative;padding:6px 11px;line-height:1;white-space:nowrap}
+.chatbtn>span:first-child{font-size:15px}
 .chatbtn .dot{position:absolute;top:2px;right:2px;width:11px;height:11px;border-radius:50%;background:#e5383b;border:2px solid var(--green)}
 .chat-sheet{height:calc(100% - env(safe-area-inset-top,0px) - 24px)}
 .chat-body{flex:1;gap:10px;background:var(--bg)}
@@ -504,6 +505,10 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
   .sheet-head h2{font-size:26px}
   .card-table th,.card-table td{padding:8px 5px}
 }
+/* top bar: keep all buttons on one line */
+.navbtn{white-space:nowrap}
+@media (max-width:400px){ .bar-in{gap:6px} .navbtn{padding:6px 9px;font-size:13.5px} .chatbtn{padding:6px 9px} .chatbtn>span:first-child{font-size:13px} }
+@media (max-width:360px){ .navbtn{padding:6px 7px;font-size:12.5px} .brand::before{font-size:19px} .brand{width:24px} }
 </style>
 </head>
 <body>
@@ -514,7 +519,7 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
     <button class="brand" id="brand" type="button">Tournament</button>
     <button class="navbtn" id="navBoard" type="button" aria-pressed="false"><span class="bolt" aria-hidden="true">⚡</span> Live Leaderboard</button>
     <button class="navbtn" id="navRules" type="button" aria-pressed="false">Rules</button>
-    <button class="navbtn chatbtn" id="navChat" type="button" aria-label="Chat"><span aria-hidden="true">💬</span><span class="dot" id="chatDot" hidden></span></button>
+    <button class="navbtn chatbtn" id="navChat" type="button" aria-label="Trash Talk chat"><span aria-hidden="true">🗑️</span> Talk<span class="dot" id="chatDot" hidden></span></button>
   </div>
 </header>
 <main id="main"><div class="wrap" id="app">
