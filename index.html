@@ -557,6 +557,12 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
   border:1px solid #1b1b1b;border-bottom:0;border-radius:3px 3px 0 0}
 .chatbtn>span:first-child{font-size:inherit}
 @media (max-width:400px){ .trashcan{width:18px;height:18px} .trashcan .can{font-size:17px;line-height:18px} .trashcan .tsign{font-size:5px} }
+/* team names stay on one line (font shrinks to fit) */
+.fit1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:100%}
+.team-top>div:first-child{flex:1;min-width:0}
+.lb-row .tn{flex-direction:column;align-items:stretch;gap:1px;min-width:0}
+.lb-row .tn-name{font-weight:700}
+.lb-row .sc-toggle{align-self:flex-start}
 </style>
 </head>
 <body>
@@ -860,7 +866,7 @@ function vTeam(){
   <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
     <button class="back" data-act="start" type="button">← All teams</button></div>
   <div class="team-top">
-    <div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="chip ${t.division==="ladies"?"ladies":""}" style="align-self:flex-start">${divName(t.division)} division</span><h1>${esc(t.name)}</h1>${t.teeTime?`<span class="teebig num">Tee time <b>${fmtTime(t.teeTime)}</b></span>`:""}</div>
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="chip ${t.division==="ladies"?"ladies":""}" style="align-self:flex-start">${divName(t.division)} division</span><h1 class="fit1" data-max="44" data-min="14">${esc(t.name)}</h1>${t.teeTime?`<span class="teebig num">Tee time <b>${fmtTime(t.teeTime)}</b></span>`:""}</div>
     <div class="topar num ${tot.thru?"":"idle"}"><b>${tot.thru?fmtPar(tot.toPar):"–"}</b><span>${tot.thru?`thru ${tot.thru}`:"not started"}</span></div>
   </div>`;
   if(!ps.length) return head+`<div class="empty"><b>No golfers on this team yet</b><span>The tournament admin adds golfers to teams.</span></div>`;
@@ -959,7 +965,7 @@ function vBoard(){
   const rows=ts.map((r,i)=>{if(r.x.thru&&r.x.toPar!==prev){pos=i+1;prev=r.x.toPar;}
     const open=S.openTeams.has(r.t.id), ps=teamPlayers(r.t.id);
     return `<details class="lb-row ${r.t.id===S.teamId?"mine":""}" data-team="${esc(r.t.id)}" ${open?"open":""}>
-      <summary class="lb-grid num"><span>${r.x.thru?pos:""}</span><span class="tn"><span>${esc(r.t.name)}</span><span class="sc-toggle"><span class="when-closed">Show scorecard ▾</span><span class="when-open">Hide scorecard ▴</span></span></span>
+      <summary class="lb-grid num"><span>${r.x.thru?pos:""}</span><span class="tn"><span class="tn-name fit1" data-max="16" data-min="11">${esc(r.t.name)}</span><span class="sc-toggle"><span class="when-closed">Show scorecard ▾</span><span class="when-open">Hide scorecard ▴</span></span></span>
       <span class="r"><b>${r.x.thru?fmtPar(r.x.toPar):"–"}</b></span><span class="r">${r.x.thru?(r.x.thru===18?"F":r.x.thru):(r.t.teeTime?fmtTime(r.t.teeTime):"–")}</span>
       <span class="r">${r.x.thru?r.x.score:"–"}</span></summary>
       <div class="lb-body">${open?(ps.length?vTeamCard(r.t,ps,true):`<p class="muted">No golfers on this team yet.</p>`):""}</div>
@@ -1169,7 +1175,7 @@ function render(){
   // preserve focus on inputs during live re-render
   const a=document.activeElement, fid=a&&a.id, sel=a&&a.selectionStart;
   if(fid && /^(ev|p|t|c)[A-Z]/.test(fid) && S.view==="admin") return; // don't clobber a form being typed in
-  app.innerHTML=html; fitGameTitles(); fitHoleFacts();
+  app.innerHTML=html; fitGameTitles(); fitHoleFacts(); fitOneLine(app);
   if(fid){const n=document.getElementById(fid); if(n){n.focus(); try{if(sel!=null)n.setSelectionRange(sel,sel)}catch(e){}}}
 }
 function renderBoard(){
@@ -1177,7 +1183,7 @@ function renderBoard(){
   document.documentElement.style.overflow=(S.boardOpen||S.rulesOpen||S.chatOpen)?"hidden":"";
   if(!S.boardOpen) return;
   const body=document.getElementById("lbBody"), y=body.scrollTop;
-  body.innerHTML=db?vBoard():`<div class="empty"><b>Sign in to see the leaderboard</b></div>`;
+  body.innerHTML=db?vBoard():`<div class="empty"><b>Sign in to see the leaderboard</b></div>`; fitOneLine(body);
   body.scrollTop=y;
 }
 /* ---------- message ping ---------- */
@@ -1410,12 +1416,17 @@ function closeRules(){S.rulesOpen=false;renderRules();if(!S.boardOpen&&!S.chatOp
 function openBoard(){const mt=S.teams.find(x=>x.id===S.teamId);S.boardDiv=mt?mt.division:S.div;S.boardOpen=true;renderBoard();document.querySelector("#lbModal .xbtn")?.focus();}
 function closeBoard(){S.boardOpen=false;renderBoard();document.getElementById("navBoard").setAttribute("aria-pressed","false");}
 function firstOpen(tid){const ps=teamPlayers(tid);for(let n=1;n<=18;n++){if(!ps.every(p=>entry(p.id,n)))return n;}return 18;}
+// Shrink single-line names (team names) until they fit their space
+function fitOneLine(root){ (root||document).querySelectorAll(".fit1").forEach(el=>{
+  const max=+el.dataset.max||20, min=+el.dataset.min||11; let size=max; el.style.fontSize=size+"px";
+  if(!el.clientWidth) return;
+  while(size>min&&el.scrollWidth>el.clientWidth+0.5){ size-=0.5; el.style.fontSize=size+"px"; } }); }
 // Shrink the two game titles together (same size) until both fit on one line
 function fitGameTitles(){ const bs=[...document.querySelectorAll(".game-list b")]; if(!bs.length) return;
   let size=20; const fits=()=>bs.every(b=>b.scrollWidth<=b.parentElement.clientWidth-24);
   bs.forEach(b=>b.style.fontSize=size+"px");
   while(size>12&&!fits()){ size-=0.5; bs.forEach(b=>b.style.fontSize=size+"px"); } }
-window.addEventListener("resize",()=>fitGameTitles());
+window.addEventListener("resize",()=>{fitGameTitles(); fitOneLine();});
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>fitGameTitles());
 // Size par/yds/hcp so their block matches the height of "HOLE N" (top and bottom aligned)
 function fitHoleFacts(){
