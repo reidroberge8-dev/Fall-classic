@@ -438,11 +438,11 @@ details.course:not([open]){gap:0}
 .taken-actions{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:6px}
 .taken-actions .btn{width:100%;min-height:50px;font-size:17px}
 /* hole header: label on top, hole number and par/yds/hcp on one row */
-.hole-head{flex-wrap:wrap;align-items:flex-end;column-gap:14px;row-gap:2px}
+.hole-head{flex-wrap:wrap;align-items:last baseline;column-gap:14px;row-gap:2px}
 .hole-head>div:first-child{display:contents}
 .hole-head .eyebrow{flex:0 0 100%}
 .hole-head h2{white-space:nowrap}
-.hole-head .hole-facts{margin-left:auto;padding-bottom:3px}
+.hole-head .hole-facts{margin-left:auto;align-items:last baseline}
 /* ---- Mobile tuning ---- */
 @media (max-width:520px){
   .brand{font-size:0;flex:0 0 auto;width:30px;overflow:visible}
