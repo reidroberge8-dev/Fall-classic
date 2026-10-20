@@ -1244,7 +1244,7 @@ function shoutouts(D){
     if(d.s===1) out.push({t:`🎯 HOLE IN ONE! ${p.name} aced #${D.n}!`,snd:"ace"});
     else if(diff<=-2) out.push({t:`🦅 ${p.name} eagled #${D.n}!`,snd:"eagle"});
     else if(diff===-1) out.push({t:`🐦 ${p.name} birdied #${D.n}`,snd:"birdie"});
-    if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. Nice ${d.p}-putt, ya jackass! +$1 to the pot`,snd:"boo"});
+    if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. +$1 to the pot`,snd:"boo"});
   }
   return out;
 }
