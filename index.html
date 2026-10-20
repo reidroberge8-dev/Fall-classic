@@ -574,6 +574,9 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .chips i{width:24px;height:8px}
 .pot-sub{font-size:13px}
 .chip-ico{width:1.1em;height:1.1em;vertical-align:-.18em;margin-left:.1em;display:inline-block}
+.putt-table th.c,.putt-table td.c{text-align:center}
+.putt-table td.c{position:relative}
+.putt-table td.c .star{position:absolute;margin-left:4px}
 </style>
 </head>
 <body>
@@ -1002,9 +1005,9 @@ function vBoard(){
     <div class="lb-list">${rows}</div>
     <p class="note">Net, to par. A hole counts once every golfer on the team has entered a score.</p></section>`
     :`<div class="empty"><b>No ${divName(d)} teams yet</b></div>`}
-  ${pl.length?`<section class="panel"><h2>Putting</h2><div class="scroll"><table class="card-table num">
-    <thead><tr><th>Golfer</th><th class="r">1-putts</th><th class="r">3+</th><th class="r">Owed</th><th class="r">Putts</th></tr></thead>
-    <tbody>${pl.map(r=>`<tr><td>${esc(r.p.name)}</td><td class="r p1"><b>${r.c.one}</b>${maxOne>0&&r.c.one===maxOne?` <span class="star" aria-label="most 1-putts">★</span>`:""}</td><td class="r p3"><b>${r.c.three}</b></td><td class="r ${r.c.three?"p3":"muted"}"><b>$${r.c.three}</b></td><td class="r"><b>${r.c.tot}</b><span class="thru-sm">thru ${r.c.holes}</span></td></tr>`).join("")}</tbody></table></div></section>`:""}`;
+  ${pl.length?`<section class="panel"><h2>Putting</h2><div class="scroll"><table class="card-table num putt-table">
+    <thead><tr><th>Golfer</th><th class="c">1-putts</th><th class="c">3+</th><th class="c">Owed</th><th class="c">Putts</th></tr></thead>
+    <tbody>${pl.map(r=>`<tr><td>${esc(r.p.name)}</td><td class="c p1"><b>${r.c.one}</b>${maxOne>0&&r.c.one===maxOne?` <span class="star" aria-label="most 1-putts">★</span>`:""}</td><td class="c p3"><b>${r.c.three}</b></td><td class="c ${r.c.three?"p3":"muted"}"><b>$${r.c.three}</b></td><td class="c"><b>${r.c.tot}</b><span class="thru-sm">thru ${r.c.holes}</span></td></tr>`).join("")}</tbody></table></div></section>`:""}`;
 }
 
 /* ---------- admin ---------- */
