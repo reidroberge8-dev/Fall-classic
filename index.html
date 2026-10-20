@@ -530,6 +530,12 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .navrow{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .navrow.end{justify-content:flex-end}
 .back.fwd{align-self:auto}
+/* leaderboard: give the team name more room */
+.lb-grid{grid-template-columns:18px minmax(0,1fr) 50px 36px 50px;gap:8px;padding-left:4px;padding-right:4px}
+.lb-head span.r{white-space:normal;line-height:1.1}
+.lb-row .tn{font-size:16px;line-height:1.25}
+.lb-row .sc-toggle{font-size:11px}
+@media (max-width:400px){.lb-grid{grid-template-columns:16px minmax(0,1fr) 44px 32px 44px;gap:6px}}
 </style>
 </head>
 <body>
