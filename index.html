@@ -916,11 +916,11 @@ function aEvent(){
     </div>
     <p class="note">A wide landscape photo works best. Photos are resized automatically before saving.</p>
     <div class="photo-slot" style="margin-top:6px"><label class="eyebrow" for="upHeckle">3-putt heckle sound</label>
-      <p class="note" style="margin:0">${S.heckle?.data?"Your recording plays on every 3-putt.":"Using the phone's voice: \u201cNice three-putt, ya jackass!\u201d Upload a short recording (MP3 or M4A, under 600 KB) to use your own."}</p>
+      <p class="note" style="margin:0">${S.heckle?.data?"Your recording plays on every 3-putt.":"Using the built-in clip: \u201cYou suck, ya jackass!\u201d Upload a short recording (MP3 or M4A, under 600 KB) to use a different one."}</p>
       <input id="upHeckle" type="file" accept="audio/*" data-slot="heckle">
       <div class="row-actions" style="justify-content:flex-start">
         <button class="btn sm" type="button" data-act="testheckle">▶ Play 3-putt sound</button>
-        ${S.heckle?.data?`<button class="btn sm" type="button" data-act="clearheckle">Use phone voice instead</button>`:""}
+        ${S.heckle?.data?`<button class="btn sm" type="button" data-act="clearheckle">Use built-in clip instead</button>`:""}
       </div></div>`
     :""}
   </section>`;
@@ -1170,17 +1170,13 @@ const SFX_RANK={ace:5,eagle:4,birdie:3,boo:2,ping:1};
 let heckleBuf=null, heckleSrc=null;
 async function loadHeckle(dataUrl){ heckleSrc=dataUrl||null; heckleBuf=null; if(!dataUrl) return;
   try{ unlockAudio(); if(!actx) return; const ab=await (await fetch(dataUrl)).arrayBuffer(); heckleBuf=await actx.decodeAudioData(ab); }catch(e){ console.warn("heckle clip",e); } }
-let speechUnlocked=false;
-function unlockSpeech(){ if(speechUnlocked||!window.speechSynthesis) return; try{ const u=new SpeechSynthesisUtterance(" "); u.volume=0; speechSynthesis.speak(u); speechUnlocked=true; }catch(e){} }
-["touchend","click"].forEach(ev=>document.addEventListener(ev,unlockSpeech,{passive:true}));
-function heckleVoice(){ const vs=(window.speechSynthesis&&speechSynthesis.getVoices())||[]; const en=vs.filter(v=>/^en/i.test(v.lang));
-  const pref=["Daniel","Alex","Fred","Aaron","Arthur","Rishi","Google UK English Male","Microsoft Guy","Microsoft David","Male"];
-  for(const n of pref){ const v=en.find(v=>v.name.includes(n)); if(v) return v; } return en[0]||vs[0]||null; }
+const DEFAULT_HECKLE="sounds/three-putt.mp3";
+let heckleEl=null;
 function heckle(){
   if(heckleSrc&&heckleBuf&&actx){ try{ const src=actx.createBufferSource(), g=actx.createGain(); g.gain.value=1; src.buffer=heckleBuf; src.connect(g); g.connect(actx.destination); src.start(actx.currentTime+0.35); return; }catch(e){} }
-  if(!window.speechSynthesis) return;
-  try{ const u=new SpeechSynthesisUtterance("Nice three putt, ya jackass!"); const v=heckleVoice(); if(v) u.voice=v;
-    u.rate=1.08; u.pitch=0.55; u.volume=1; setTimeout(()=>{ try{ speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){} },450); }catch(e){} }
+  // clip not decoded yet: fall back to a plain audio element
+  try{ const src=heckleSrc||DEFAULT_HECKLE; if(!heckleEl||heckleEl.dataset.src!==src){ heckleEl=new Audio(src); heckleEl.dataset.src=src; }
+    heckleEl.currentTime=0; const pr=heckleEl.play(); if(pr&&pr.catch) pr.catch(()=>{}); }catch(e){} }
 function playSfx(kind){ const a=sfxReady(); if(!a) return; if(kind==="boo") heckle(); try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
   try{ (SFX[kind]||SFX.ping)(a,a.currentTime+0.02); }catch(e){} }
 function ping(){ playSfx("ping"); }
@@ -1313,8 +1309,8 @@ app.addEventListener("click",async e=>{
   if(act==="home") return go("home");
   if(act==="welcome") return go("welcome");
   if(act==="division") return go("division");
-  if(act==="testheckle"){ unlockAudio(); unlockSpeech(); const was=ls("chatSound"); ls("chatSound","on"); playSfx("boo"); if(was) ls("chatSound",was); return; }
-  if(act==="clearheckle"){ await write(()=>db.doc("config/heckle").delete(),"Back to the phone voice"); return; }
+  if(act==="testheckle"){ unlockAudio(); const was=ls("chatSound"); ls("chatSound","on"); playSfx("boo"); if(was) ls("chatSound",was); return; }
+  if(act==="clearheckle"){ await write(()=>db.doc("config/heckle").delete(),"Back to the built-in clip"); return; }
   if(act==="clearimg"){ await write(()=>db.doc("config/"+b.dataset.slot).set({off:true}),"Photo removed"); return; }
   if(act==="start") return go("choose");
   if(act==="team") return go("team");
@@ -1497,7 +1493,7 @@ render();
   db.doc("config/course").onSnapshot(s=>{S.course=s.exists?s.data():DEFAULT_COURSE;render();},fail);
   db.doc("config/event").onSnapshot(s=>{S.event=s.exists?s.data():DEFAULT_EVENT;render();},fail);
   db.doc("config/hero").onSnapshot(s=>{S.hero=s.exists?s.data():null;render();},fail);
-  db.doc("config/heckle").onSnapshot(s=>{S.heckle=s.exists?s.data():null; loadHeckle(S.heckle?.data); render();},fail);
+  db.doc("config/heckle").onSnapshot(s=>{S.heckle=s.exists?s.data():null; loadHeckle(S.heckle?.data||DEFAULT_HECKLE); render();},fail);
   db.doc("config/logo").onSnapshot(s=>{S.logo=s.exists?s.data():null;render();},fail);
   render();
 })();
