@@ -1053,32 +1053,47 @@ function unlockAudio(){ try{ if(!actx){ const C=window.AudioContext||window.webk
 ["touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
 function sfxReady(){ if(!soundOn()) return null; unlockAudio(); return (actx&&actx.state==="running")?actx:null; }
 function noiseBuf(a,secs){ const b=a.createBuffer(1,Math.ceil(a.sampleRate*secs),a.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; return b; }
+function outdoor(a,dest,secs,wet){ const c=a.createConvolver(), n=Math.ceil(a.sampleRate*secs), ir=a.createBuffer(2,n,a.sampleRate);
+  for(let ch=0;ch<2;ch++){ const d=ir.getChannelData(ch); for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3.2); }
+  c.buffer=ir; const dry=a.createGain(), w=a.createGain(), inp=a.createGain(); dry.gain.value=1; w.gain.value=wet;
+  inp.connect(dry); dry.connect(dest); inp.connect(c); c.connect(w); w.connect(dest); return inp; }
 const SFX={
   ping(a,t){ const g=a.createGain(); g.connect(a.destination);
     g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.35,t+0.015); g.gain.exponentialRampToValueAtTime(0.0001,t+0.45);
     [[880,0],[1318.5,0.09]].forEach(([f,d])=>{ const o=a.createOscillator(); o.type="sine"; o.frequency.setValueAtTime(f,t+d); o.connect(g); o.start(t+d); o.stop(t+d+0.4); }); },
-  // Songbird: a few quick upward chirps, then a short trill
-  birdie(a,t){ const out=a.createGain(); out.gain.value=0.28; out.connect(a.destination);
-    const chirp=(st,f0,f1,dur)=>{ const o=a.createOscillator(), g=a.createGain(); o.type="sine";
-      o.frequency.setValueAtTime(f0,st); o.frequency.exponentialRampToValueAtTime(f1,st+dur*0.7); o.frequency.exponentialRampToValueAtTime(f0*1.1,st+dur);
-      g.gain.setValueAtTime(0.0001,st); g.gain.exponentialRampToValueAtTime(1,st+0.008); g.gain.exponentialRampToValueAtTime(0.0001,st+dur);
-      o.connect(g); g.connect(out); o.start(st); o.stop(st+dur+0.02); };
-    chirp(t,2600,4300,0.09); chirp(t+0.13,2800,4600,0.08); chirp(t+0.24,3000,4800,0.07);
-    for(let k=0;k<6;k++) chirp(t+0.42+k*0.045,3600,4200,0.035); },
-  // Raptor screech: harsh, high, falling cry with flutter
-  eagle(a,t){ const dur=1.1, o=a.createOscillator(), o2=a.createOscillator(), lfo=a.createOscillator(), lg=a.createGain(),
-      bp=a.createBiquadFilter(), g=a.createGain();
-    o.type="sawtooth"; o2.type="square";
-    o.frequency.setValueAtTime(2300,t); o.frequency.linearRampToValueAtTime(2700,t+0.12); o.frequency.exponentialRampToValueAtTime(1300,t+dur);
-    o2.frequency.setValueAtTime(2310,t); o2.frequency.linearRampToValueAtTime(2690,t+0.12); o2.frequency.exponentialRampToValueAtTime(1290,t+dur);
-    lfo.frequency.value=38; lg.gain.value=120; lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
-    bp.type="bandpass"; bp.frequency.value=2400; bp.Q.value=2.5;
-    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.13,t+0.05); g.gain.setValueAtTime(0.12,t+0.6); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    o.connect(bp); o2.connect(bp); bp.connect(g); g.connect(a.destination);
-    const n=a.createBufferSource(), nb=a.createBiquadFilter(), ng=a.createGain(); n.buffer=noiseBuf(a,dur);
-    nb.type="bandpass"; nb.frequency.value=3000; nb.Q.value=1.5; ng.gain.setValueAtTime(0.0001,t); ng.gain.exponentialRampToValueAtTime(0.035,t+0.05); ng.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    n.connect(nb); nb.connect(ng); ng.connect(a.destination);
-    [o,o2,lfo,n].forEach(x=>{x.start(t); x.stop(t+dur+0.05);}); },
+  // Songbird (cardinal-like): clear down-slurred whistles, then a quick trill, with outdoor echo
+  birdie(a,t){ const out=a.createGain(); out.gain.value=0.22; out.connect(a.destination); const bus=outdoor(a,out,0.9,0.22);
+    const note=(st,f0,f1,dur,trill)=>{ const o=a.createOscillator(), h=a.createOscillator(), hg=a.createGain(), g=a.createGain();
+      o.type="sine"; h.type="sine";
+      o.frequency.setValueAtTime(f0,st); o.frequency.exponentialRampToValueAtTime(f1,st+dur);
+      h.frequency.setValueAtTime(f0*2,st); h.frequency.exponentialRampToValueAtTime(f1*2,st+dur); hg.gain.value=0.06;
+      g.gain.setValueAtTime(0.0001,st); g.gain.exponentialRampToValueAtTime(0.9,st+Math.min(0.012,dur*0.2)); g.gain.setValueAtTime(0.85,st+dur*0.7); g.gain.exponentialRampToValueAtTime(0.0001,st+dur);
+      if(trill){ const am=a.createOscillator(), ad=a.createGain(); am.frequency.value=trill; ad.gain.value=0.45; am.connect(ad); ad.connect(g.gain); am.start(st); am.stop(st+dur); }
+      const fm=a.createOscillator(), fd=a.createGain(); fm.frequency.value=60+Math.random()*30; fd.gain.value=f0*0.012; fm.connect(fd); fd.connect(o.frequency); fm.start(st); fm.stop(st+dur);
+      o.connect(g); h.connect(hg); hg.connect(g); g.connect(bus); o.start(st); h.start(st); o.stop(st+dur+0.02); h.stop(st+dur+0.02); };
+    note(t,4300,2100,0.22); note(t+0.27,4400,2050,0.22);
+    for(let k=0;k<6;k++) note(t+0.58+k*0.065,3600,2800,0.05);
+    note(t+1.0,2600,3900,0.12,0); },
+  // Raptor screech (red-tailed hawk "kee-eeeerr"): raspy, rising then long falling cry, with outdoor echo
+  eagle(a,t){ const dur=1.6, out=a.createGain(); out.gain.value=0.72; out.connect(a.destination); const bus=outdoor(a,out,1.4,0.3);
+    const src=a.createOscillator(); src.type="sawtooth";
+    src.frequency.setValueAtTime(1900,t); src.frequency.exponentialRampToValueAtTime(2900,t+0.16);
+    src.frequency.setValueAtTime(2900,t+0.3); src.frequency.exponentialRampToValueAtTime(1700,t+dur);
+    const jit=a.createOscillator(), jd=a.createGain(); jit.frequency.value=23; jd.gain.value=55; jit.connect(jd); jd.connect(src.frequency);
+    // raspy roughness: amplitude-modulate at ~85 Hz
+    const rough=a.createGain(), am=a.createOscillator(), amd=a.createGain(); am.type="square"; am.frequency.value=85; amd.gain.value=0.55; rough.gain.value=0.6;
+    am.connect(amd); amd.connect(rough.gain);
+    // breathy hiss riding the same pitch region
+    const n=a.createBufferSource(); n.buffer=noiseBuf(a,dur); const nb=a.createBiquadFilter(); nb.type="bandpass"; nb.Q.value=4;
+    nb.frequency.setValueAtTime(2000,t); nb.frequency.exponentialRampToValueAtTime(3000,t+0.16); nb.frequency.setValueAtTime(3000,t+0.3); nb.frequency.exponentialRampToValueAtTime(1800,t+dur);
+    const ng=a.createGain(); ng.gain.value=0.9;
+    // vocal-tract resonances
+    const f1=a.createBiquadFilter(); f1.type="bandpass"; f1.frequency.value=2700; f1.Q.value=1.6;
+    const f2=a.createBiquadFilter(); f2.type="peaking"; f2.frequency.value=5200; f2.Q.value=2; f2.gain.value=6;
+    const env=a.createGain(); env.gain.setValueAtTime(0.0001,t); env.gain.exponentialRampToValueAtTime(0.5,t+0.06); env.gain.setValueAtTime(0.45,t+0.35);
+    env.gain.linearRampToValueAtTime(0.3,t+dur*0.8); env.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    src.connect(rough); n.connect(nb); nb.connect(ng); ng.connect(rough); rough.connect(f1); f1.connect(f2); f2.connect(env); env.connect(bus);
+    [src,jit,am,n].forEach(x=>{x.start(t); x.stop(t+dur+0.05);}); },
   // Crowd boo: ~20 voices singing an "ooo" vowel (formant-filtered), staggered, sagging in pitch, with breath and rumble
   boo(a,t){ const dur=2.2, bus=a.createGain(); bus.connect(a.destination);
     bus.gain.setValueAtTime(0.0001,t); bus.gain.exponentialRampToValueAtTime(4.5,t+0.35); bus.gain.setValueAtTime(4.5,t+1.5); bus.gain.exponentialRampToValueAtTime(0.0001,t+dur);
@@ -1102,26 +1117,28 @@ const SFX={
     rl.type="lowpass"; rl.frequency.value=380; rg.gain.value=0.18; rn.connect(rl); rl.connect(rg); rg.connect(bus); rn.start(t); rn.stop(t+dur);
   },
 };
-// Crowd cheer: roaring crowd, rising "whoo" voices and scattered applause
-SFX.ace=(a,t)=>{ const dur=2.8, bus=a.createGain(); bus.connect(a.destination);
-  bus.gain.setValueAtTime(0.0001,t); bus.gain.exponentialRampToValueAtTime(1.4,t+0.25); bus.gain.setValueAtTime(1.4,t+1.9); bus.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-  // roar
-  const n=a.createBufferSource(), bp=a.createBiquadFilter(), ng=a.createGain(); n.buffer=noiseBuf(a,dur);
-  bp.type="bandpass"; bp.frequency.setValueAtTime(900,t); bp.frequency.linearRampToValueAtTime(1400,t+0.6); bp.Q.value=0.6;
-  ng.gain.value=0.22; n.connect(bp); bp.connect(ng); ng.connect(bus); n.start(t); n.stop(t+dur);
-  // voices
-  for(let k=0;k<12;k++){ const o=a.createOscillator(), f=a.createBiquadFilter(), g=a.createGain(), st=t+Math.random()*0.35, base=220+Math.random()*260;
-    o.type="sawtooth"; o.frequency.setValueAtTime(base,st); o.frequency.exponentialRampToValueAtTime(base*1.5,st+0.45); o.frequency.exponentialRampToValueAtTime(base*1.25,st+1.6);
-    const v=a.createOscillator(), vd=a.createGain(); v.frequency.value=5+Math.random()*3; vd.gain.value=base*0.03; v.connect(vd); vd.connect(o.frequency);
-    f.type="bandpass"; f.frequency.value=900+Math.random()*700; f.Q.value=3;
-    g.gain.setValueAtTime(0.0001,st); g.gain.exponentialRampToValueAtTime(0.05,st+0.2); g.gain.exponentialRampToValueAtTime(0.0001,st+1.6+Math.random()*0.8);
-    o.connect(f); f.connect(g); g.connect(bus); o.start(st); o.stop(t+dur); v.start(st); v.stop(t+dur); }
-  // applause
-  const clapBuf=noiseBuf(a,0.05);
-  for(let k=0;k<70;k++){ const st=t+0.15+Math.random()*2.3, c=a.createBufferSource(), hp=a.createBiquadFilter(), cg=a.createGain();
-    c.buffer=clapBuf; hp.type="highpass"; hp.frequency.value=1200+Math.random()*1500;
-    cg.gain.setValueAtTime(0.06+Math.random()*0.08,st); cg.gain.exponentialRampToValueAtTime(0.0001,st+0.04);
-    c.connect(hp); hp.connect(cg); cg.connect(bus); c.start(st); c.stop(st+0.05); }
+// Crowd cheer: dozens of voices yelling "whoo!"/"yeah!" (vowel formants, rising pitch), dense applause, roar, outdoor echo
+SFX.ace=(a,t)=>{ const dur=3.2, out=a.createGain(); out.connect(a.destination); const bus=outdoor(a,out,1.2,0.28);
+  out.gain.setValueAtTime(0.0001,t); out.gain.exponentialRampToValueAtTime(1.8,t+0.3); out.gain.setValueAtTime(1.8,t+2.2); out.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  const pulse=a.createPeriodicWave(new Float32Array([0,1,.55,.36,.27,.21,.17,.14,.12,.1,.09,.08,.07]),new Float32Array(13));
+  const vowel=(F)=>{ const inp=a.createGain(); F.forEach(([f,q,g])=>{ const b=a.createBiquadFilter(); b.type="bandpass"; b.frequency.value=f; b.Q.value=q; const gg=a.createGain(); gg.gain.value=g; inp.connect(b); b.connect(gg); gg.connect(bus); }); return inp; };
+  const OO=vowel([[380,5,1],[900,6,.4],[2400,8,.08]]), AH=vowel([[750,5,1],[1250,6,.55],[2600,8,.15]]), EH=vowel([[550,5,1],[1800,6,.5],[2600,8,.2]]);
+  for(let k=0;k<28;k++){
+    const hi=k%3!==0, base=hi?(320+Math.random()*260):(160+Math.random()*110), st=t+Math.random()*0.5, end=st+0.9+Math.random()*1.6;
+    const o=a.createOscillator(), g=a.createGain(); o.setPeriodicWave(pulse);
+    o.frequency.setValueAtTime(base,st); o.frequency.exponentialRampToValueAtTime(base*(1.35+Math.random()*0.35),st+0.35); o.frequency.exponentialRampToValueAtTime(base*1.15,end);
+    const v=a.createOscillator(), vd=a.createGain(); v.frequency.value=5+Math.random()*3; vd.gain.value=base*0.04; v.connect(vd); vd.connect(o.frequency);
+    g.gain.setValueAtTime(0.0001,st); g.gain.exponentialRampToValueAtTime(0.035,st+0.12); g.gain.exponentialRampToValueAtTime(0.0001,end);
+    o.connect(g); g.connect([OO,AH,EH][k%3]); [o,v].forEach(x=>{x.start(st); x.stop(end+0.05);});
+  }
+  // crowd roar shaped like an "ahh"
+  const r=a.createBufferSource(), rg=a.createGain(); r.buffer=noiseBuf(a,dur); rg.gain.value=0.5; r.connect(rg); rg.connect(AH); r.start(t); r.stop(t+dur);
+  // dense applause: hundreds of short claps with a hand-cupped resonance
+  const clap=noiseBuf(a,0.03);
+  for(let k=0;k<260;k++){ const st=t+0.1+Math.pow(Math.random(),0.8)*2.8, c=a.createBufferSource(), b=a.createBiquadFilter(), cg=a.createGain();
+    c.buffer=clap; b.type="bandpass"; b.frequency.value=900+Math.random()*1800; b.Q.value=1.2+Math.random();
+    cg.gain.setValueAtTime(0.05+Math.random()*0.1,st); cg.gain.exponentialRampToValueAtTime(0.0001,st+0.02+Math.random()*0.02);
+    c.connect(b); b.connect(cg); cg.connect(bus); c.start(st); c.stop(st+0.04); }
 };
 const SFX_RANK={ace:5,eagle:4,birdie:3,boo:2,ping:1};
 function playSfx(kind){ const a=sfxReady(); if(!a) return; try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
