@@ -891,7 +891,7 @@ function vEntry(t,ps){
   return `<section class="panel entry">
     <div class="hs-row" role="group" aria-label="Holes">${strip}</div>
     <div class="hole-head">
-      <div><span class="eyebrow">${n<=9?"Front 9 · best net score counts":"Back 9 · best 2 net scores count"}</span><h2 style="font-size:40px">Hole ${n}</h2></div>
+      <div><span class="eyebrow">${n<=9?"Front 9 · best net score":"Back 9 · best 2 net scores"}</span><h2 style="font-size:40px">Hole ${n}</h2></div>
       <div class="hole-facts num"><span><b>${h.par}</b>Par</span><span><b>${teeFor(t.division)?.yards?.[n-1]??"–"}</b>Yds</span><span><b>${h[hcpKey(t.division)]??"–"}</b>HCP</span></div>
     </div>
     <div class="prows">${rows}</div>
