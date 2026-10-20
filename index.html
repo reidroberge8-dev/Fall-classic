@@ -907,7 +907,7 @@ function vEntry(t,ps){
   const hkey=t.id+":"+n;
   if(S.draft.startedEmpty&&allIn&&!(S.savedHere||{})[hkey]&&!(S.ackHole||{})[hkey]){
     const strip0=Array.from({length:18},(_,i)=>{const m=i+1;const done=ps.every(p=>entry(p.id,m));return `<button type="button" class="hs ${m===n?"cur":""} ${done?"done":""}" data-act="hole" data-n="${m}">${m}</button>`}).join("");
-    return `<section class="panel entry">
+    return `<section class="panel entry"><h2 class="fit1" data-max="28" data-min="16">Hole by Hole Scorecard</h2>
       <div class="hs-row" role="group" aria-label="Holes">${strip0}</div>
       <div class="taken" role="alert">
         <div class="taken-ic" aria-hidden="true">✅</div>
@@ -933,7 +933,7 @@ function vEntry(t,ps){
       <div class="mini"><span class="lbl">Score</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="s" data-d="-1" aria-label="${esc(p.name)} score down">−</button><output class="num ${d.s==null?"blank":d.s<h.par?"under":d.s>h.par?"over":""}">${d.s??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="s" data-d="1" aria-label="${esc(p.name)} score up">+</button></div></div>
       <div class="mini"><span class="lbl">Putts</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="-1" aria-label="${esc(p.name)} putts down">−</button><output class="num ${d.p==null?"blank":d.p<=1?"p1":d.p===2?"p2":"p3"}">${d.p??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="1" aria-label="${esc(p.name)} putts up">+</button></div></div>
     </div>`}).join("");
-  return `<section class="panel entry">
+  return `<section class="panel entry"><h2 class="fit1" data-max="28" data-min="16">Hole by Hole Scorecard</h2>
     <div class="hs-row" role="group" aria-label="Holes">${strip}</div>
     <div class="hole-head">
       <div><span class="sc-cap" style="display:block;margin:0">${n<=9?`<b>Front 9</b> · Best <b class="n">1</b> net score`:`<b>Back 9</b> · Best <b class="n">2</b> net scores`}</span><h2 style="font-size:40px">Hole ${n}</h2></div>
