@@ -424,6 +424,9 @@ details.course:not([open]){gap:0}
 .lb-head span{min-width:0;overflow-wrap:normal}
 #sysBanner{position:relative;z-index:6;background:#b3261e;color:#fff;font-weight:600;font-size:14px;line-height:1.35;
   padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));text-align:center}
+.sh-actions{display:flex;gap:8px;align-items:center}
+.sndbtn{font-size:18px}
+.sndbtn[aria-pressed="false"]{opacity:.7}
 /* ---- Mobile tuning ---- */
 @media (max-width:520px){
   .brand{font-size:0;flex:0 0 auto;width:30px;overflow:visible}
@@ -481,7 +484,7 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 <div class="modal" id="chatModal" hidden>
   <div class="modal-back" data-mact="close"></div>
   <div class="sheet chat-sheet" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
-    <div class="sheet-head"><h2 id="chatTitle">💬 Trash Talk</h2><button class="xbtn" type="button" data-mact="close" aria-label="Close chat">✕</button></div>
+    <div class="sheet-head"><h2 id="chatTitle">💬 Trash Talk</h2><div class="sh-actions"><button class="xbtn sndbtn" id="soundBtn" type="button" data-act="sound" aria-label="Message sound on" aria-pressed="true">🔔</button><button class="xbtn" type="button" data-mact="close" aria-label="Close chat">✕</button></div></div>
     <div class="sheet-body chat-body" id="chatBody"></div>
     <form class="composer" id="chatForm" autocomplete="off">
       <div class="as" id="chatAs"></div>
@@ -1042,6 +1045,21 @@ function renderBoard(){
   body.innerHTML=db?vBoard():`<div class="empty"><b>Sign in to see the leaderboard</b></div>`;
   body.scrollTop=y;
 }
+/* ---------- message ping ---------- */
+let actx=null;
+function soundOn(){ return ls("chatSound")!=="off"; }
+function unlockAudio(){ try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C) actx=new C(); }
+  if(actx&&actx.state==="suspended") actx.resume(); }catch(e){} }
+["touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
+function ping(){
+  if(!soundOn()) return;
+  try{ navigator.vibrate&&navigator.vibrate(60); }catch(e){}
+  try{ unlockAudio(); if(!actx||actx.state!=="running") return;
+    const t=actx.currentTime, g=actx.createGain(); g.connect(actx.destination);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.35,t+0.015); g.gain.exponentialRampToValueAtTime(0.0001,t+0.45);
+    [[880,0],[1318.5,0.09]].forEach(([f,d])=>{ const o=actx.createOscillator(); o.type="sine"; o.frequency.setValueAtTime(f,t+d); o.connect(g); o.start(t+d); o.stop(t+d+0.4); });
+  }catch(e){}
+}
 function sysBanner(msg){ let el=document.getElementById("sysBanner");
   if(!el){ el=document.createElement("div"); el.id="sysBanner"; el.setAttribute("role","alert"); document.body.insertBefore(el,document.body.firstChild); }
   el.hidden=!msg; if(msg) el.textContent=msg; }
@@ -1062,7 +1080,10 @@ async function adminSignIn(){
 /* ---------- chat ---------- */
 function chatMe(){const id=ls("chatMe");return S.players.find(p=>p.id===id)||null;}
 function fmtClock(iso){try{return new Date(iso).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});}catch(e){return ""}}
+function syncSoundBtn(){ const b=document.getElementById("soundBtn"); if(!b) return; const on=soundOn();
+  b.textContent=on?"🔔":"🔕"; b.setAttribute("aria-pressed",String(on)); b.setAttribute("aria-label",on?"Message sound on":"Message sound off"); }
 function renderChat(){
+  syncSoundBtn();
   const m=document.getElementById("chatModal"); m.hidden=!S.chatOpen;
   document.getElementById("chatDot").hidden=!(S.chatUnread&&!S.chatOpen);
   if(!S.chatOpen) return;
@@ -1137,6 +1158,7 @@ document.getElementById("chatModal").addEventListener("click",async e=>{
   const a=b.dataset.act;
   if(a==="chatme"){ls("chatMe",b.dataset.id);S.chatPicking=false;S.chatJump=true;renderChat();setTimeout(()=>document.getElementById("chatInput")?.focus(),50);}
   if(a==="chatswitch"){S.chatPicking=true;renderChat();}
+  if(a==="sound"){ ls("chatSound",soundOn()?"off":"on"); syncSoundBtn(); if(soundOn()){unlockAudio(); setTimeout(ping,30); toast("Message sound on");} else toast("Message sound off"); }
   if(a==="chatdel"){const id=b.dataset.id; if(S.armed!=="m"+id){S.armed="m"+id;return renderChat();} S.armed=null;
     await write(()=>db.doc("chat/"+id).delete(),"Message deleted");}
 });
@@ -1325,6 +1347,7 @@ render();
     S.chat=s.docs.map(d=>({id:d.id,...d.data()}));
     const seen=ls("chatSeen")||"", me=ls("chatMe");
     const fresh=S.chat.filter(x=>!prevIds.has(x.id)&&!(x.kind!=="auto"&&x.pid===me)&&x.uid!==myUid);
+    if(!chatFirst&&fresh.length) ping();
     if(S.chatOpen){markSeen();}
     else{
       S.chatUnread=S.chat.some(x=>(x.at||"")>seen&&!(x.kind!=="auto"&&x.pid===me));
