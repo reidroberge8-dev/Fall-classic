@@ -595,6 +595,7 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .pick-card li.rh span:last-child{font-weight:700}
 .roster li.rh+li{border-top:1px solid var(--line)}
 .pick-card li.rh+li{border-top:1px solid var(--line)}
+.skip-ic{font-size:34px;line-height:1}
 </style>
 </head>
 <body>
@@ -1151,7 +1152,7 @@ function holeNav(n,ps){
   return `<div class="hole-nav">
     <button type="button" class="hnav" data-act="hole" data-n="${n-1}" ${n<=1?"disabled":""} aria-label="Previous hole${n>1?`, hole ${n-1}`:""}"><span aria-hidden="true">‹</span></button>
     <div class="hn-mid"><span class="sc-cap">${cap}</span><h2>Hole ${n}</h2><span class="hn-status ${done(n)?"done":""}">${done(n)?"✓ Scores entered":"Not entered yet"}</span></div>
-    <button type="button" class="hnav" data-act="hole" data-n="${n+1}" ${n>=18?"disabled":""} aria-label="Next hole${n<18?`, hole ${n+1}`:""}"><span aria-hidden="true">›</span></button>
+    <button type="button" class="hnav" data-act="holenext" data-n="${n+1}" ${n>=18?"disabled":""} aria-label="Next hole${n<18?`, hole ${n+1}`:""}"><span aria-hidden="true">›</span></button>
   </div>`;
 }
 function anyScores(d){ return S.players.some(p=>p.division===d&&Object.keys(S.scores[p.id]?.h||{}).length); }
@@ -1456,6 +1457,16 @@ function openPick(id){
   document.getElementById("pickModal").hidden=false; document.documentElement.style.overflow="hidden";
   document.querySelector("#pickModal [data-pact=confirm]")?.focus();
 }
+function openSkipWarn(n){
+  document.getElementById("pickBody").innerHTML=`
+    <div class="skip-ic" aria-hidden="true">⚠️</div>
+    <h2 id="pickTitle">Hole ${n} isn't entered yet</h2>
+    <p>Scores and putts for <b>Hole ${n}</b> haven't been saved. Do you want to go to Hole ${n+1} without entering them?</p>
+    <button class="btn primary big-confirm" type="button" data-pact="cancel">Stay on Hole ${n}</button>
+    <button class="btn" type="button" data-pact="skip" data-n="${n+1}">Skip to Hole ${n+1} without scores</button>`;
+  document.getElementById("pickModal").hidden=false; document.documentElement.style.overflow="hidden";
+  document.querySelector("#pickModal [data-pact=cancel].btn")?.focus();
+}
 function closePick(){ document.getElementById("pickModal").hidden=true; if(!S.boardOpen&&!S.rulesOpen&&!S.chatOpen) document.documentElement.style.overflow=""; }
 function renderRules(){
   const m=document.getElementById("rulesModal"); m.hidden=!S.rulesOpen;
@@ -1511,6 +1522,7 @@ document.getElementById("navChat").onclick=()=>openChat();
 document.getElementById("pickModal").addEventListener("click",e=>{
   const b=e.target.closest("[data-pact]"); if(!b) return;
   if(b.dataset.pact==="cancel") return closePick();
+  if(b.dataset.pact==="skip"){ closePick(); S.hole=Number(b.dataset.n); S.draft=null; render(); const en=document.querySelector(".entry"); if(en){const y=en.getBoundingClientRect().top+window.scrollY-70; window.scrollTo({top:Math.max(0,y)});} return; }
   if(b.dataset.pact==="confirm"){ const id=b.dataset.id; closePick(); S.teamId=id; ls("myTeam",id); S.hole=firstOpen(id); S.draft=null; toast("Let's go! Good luck out there."); go("team"); }
 });
 document.getElementById("chatModal").addEventListener("click",async e=>{
@@ -1560,6 +1572,9 @@ app.addEventListener("click",async e=>{
   if(act==="board"){return openBoard();}
   if(act==="bdiv"){S.boardDiv=b.dataset.div;return render();}
   if(act==="hole"){S.hole=Number(b.dataset.n);S.draft=null;return render();}
+  if(act==="holenext"){ const n=S.hole, ps=teamPlayers(S.teamId);
+    if(ps.length&&!ps.every(p=>entry(p.id,n))) return openSkipWarn(n);
+    S.hole=Number(b.dataset.n);S.draft=null;return render();}
   if(act==="adj"){const f=b.dataset.f,dd=Number(b.dataset.d);const d=S.draft?.v?.[id]; if(!d) return;
     if(f==="s") d.s = d.s==null ? (hole(S.draft.n)?.par||4) : Math.max(1,Math.min(15,d.s+dd));
     else d.p = d.p==null ? 2 : Math.max(0,Math.min(9,d.p+dd));
