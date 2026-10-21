@@ -1463,14 +1463,20 @@ function openPick(id){
   document.querySelector("#pickModal [data-pact=confirm]")?.focus();
 }
 function openSkipWarn(n){
-  document.getElementById("pickBody").innerHTML=`
+  const D=S.draft, ready=D&&D.n===n&&Object.values(D.v).length&&Object.values(D.v).every(d=>d.s!=null&&d.p!=null);
+  document.getElementById("pickBody").innerHTML=ready?`
+    <div class="skip-ic" aria-hidden="true">💾</div>
+    <h2 id="pickTitle">Save Hole ${n} first?</h2>
+    <p>You've entered every score and putt for <b>Hole ${n}</b>, but they haven't been saved yet.</p>
+    <button class="btn primary big-confirm" type="button" data-pact="savego">Save scores &amp; go to Hole ${n+1}</button>
+    <button class="btn" type="button" data-pact="cancel">Go back</button>`:`
     <div class="skip-ic" aria-hidden="true">⚠️</div>
     <h2 id="pickTitle">Hole ${n} isn't entered yet</h2>
     <p>Scores and putts for <b>Hole ${n}</b> haven't been saved. Do you want to go to Hole ${n+1} without entering them?</p>
     <button class="btn primary big-confirm" type="button" data-pact="cancel">Stay on Hole ${n}</button>
     <button class="btn" type="button" data-pact="skip" data-n="${n+1}">Skip to Hole ${n+1} without scores</button>`;
   document.getElementById("pickModal").hidden=false; document.documentElement.style.overflow="hidden";
-  document.querySelector("#pickModal [data-pact=cancel].btn")?.focus();
+  document.querySelector("#pickModal .big-confirm")?.focus();
 }
 function closePick(){ document.getElementById("pickModal").hidden=true; if(!S.boardOpen&&!S.rulesOpen&&!S.chatOpen) document.documentElement.style.overflow=""; }
 function renderRules(){
@@ -1527,6 +1533,7 @@ document.getElementById("navChat").onclick=()=>openChat();
 document.getElementById("pickModal").addEventListener("click",e=>{
   const b=e.target.closest("[data-pact]"); if(!b) return;
   if(b.dataset.pact==="cancel") return closePick();
+  if(b.dataset.pact==="savego"){ closePick(); const sb=document.querySelector('#app [data-act="savehole"]'); if(sb&&!sb.disabled) sb.click(); return; }
   if(b.dataset.pact==="skip"){ closePick(); S.hole=Number(b.dataset.n); S.draft=null; render(); const en=document.querySelector(".entry"); if(en){const y=en.getBoundingClientRect().top+window.scrollY-70; window.scrollTo({top:Math.max(0,y)});} return; }
   if(b.dataset.pact==="confirm"){ const id=b.dataset.id; closePick(); S.teamId=id; ls("myTeam",id); S.hole=firstOpen(id); S.draft=null; toast("Let's go! Good luck out there."); go("team"); }
 });
