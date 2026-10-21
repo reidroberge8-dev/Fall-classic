@@ -596,6 +596,11 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .roster li.rh+li{border-top:1px solid var(--line)}
 .pick-card li.rh+li{border-top:1px solid var(--line)}
 .skip-ic{font-size:34px;line-height:1}
+.team-top{padding:10px 14px;align-items:center}
+.team-top .teebig{font-size:15px}
+.team-top .teebig b{font-size:21px}
+.team-top .topar b{font-size:42px}
+.team-top .topar span{font-size:12px}
 </style>
 </head>
 <body>
@@ -900,7 +905,7 @@ function vTeam(){
   <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
     <button class="back" data-act="start" type="button">← All teams</button></div>
   <div class="team-top">
-    <div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="chip ${t.division==="ladies"?"ladies":""}" style="align-self:flex-start">${divName(t.division)} division</span><h1 class="fit1" data-max="44" data-min="14">${esc(t.name)}</h1>${t.teeTime?`<span class="teebig num">Tee time <b>${fmtTime(t.teeTime)}</b></span>`:""}</div>
+    <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><h1 class="fit1" data-max="34" data-min="14">${esc(t.name)}</h1>${t.teeTime?`<span class="teebig num">Tee time <b>${fmtTime(t.teeTime)}</b></span>`:""}</div>
     <div class="topar num ${tot.thru?"":"idle"}"><b>${tot.thru?fmtPar(tot.toPar):"–"}</b><span>${tot.thru?`thru ${tot.thru}`:"not started"}</span></div>
   </div>`;
   if(!ps.length) return head+`<div class="empty"><b>No golfers on this team yet</b><span>The tournament admin adds golfers to teams.</span></div>`;
