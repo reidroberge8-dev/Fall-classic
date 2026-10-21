@@ -601,6 +601,14 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .team-top .teebig b{font-size:21px}
 .team-top .topar b{font-size:42px}
 .team-top .topar span{font-size:12px}
+.done-card{align-items:center;text-align:center;gap:8px}
+.done-ic{font-size:44px;line-height:1}
+.done-score{font-family:var(--display);font-weight:700;font-size:72px;line-height:1;color:var(--fg)}
+.done-score.under{color:var(--green)}
+.done-split{font-size:16px;color:var(--muted);font-weight:600}
+.done-split b{color:var(--fg)}
+.done-place{margin:4px 0 6px;font-size:16px}
+.done-card .btn{width:100%}
 </style>
 </head>
 <body>
@@ -913,7 +921,23 @@ function vTeam(){
   const who_unused=`<section class="panel"><h2>Who's entering scores?</h2>
     <div class="who-row">${ps.map(p=>`<button type="button" class="who-chip" data-act="me" data-id="${esc(p.id)}" aria-pressed="${me===p.id}"><b>${esc(p.name)}</b><span class="num">HCP ${fmtH(p.handicap)}</span></button>`).join("")}</div>
     ${me?"":`<p class="note">Tap your name. Each golfer enters their own score and putts.</p>`}</section>`;
+  if(tot.thru===18&&S.review!==t.id) return head+vFinished(t,tot)+vTeamCard(t,ps);
   return head+vEntry(t,ps)+vTeamCard(t,ps);
+}
+function vFinished(t,tot){
+  const others=S.teams.filter(x=>x.division===t.division&&x.id!==t.id).map(x=>teamTotals(x));
+  const better=others.filter(x=>x.thru&&x.toPar<tot.toPar).length, tied=others.some(x=>x.thru&&x.toPar===tot.toPar);
+  const playing=others.filter(x=>x.thru<18).length, place=better+1;
+  const ord=n=>n+(n%100>=11&&n%100<=13?"th":({1:"st",2:"nd",3:"rd"}[n%10]||"th"));
+  return `<h2 class="sec-title fit1" data-max="34" data-min="18">Scorecard</h2><section class="panel done-card">
+    <div class="done-ic" aria-hidden="true">🏆</div>
+    <div class="eyebrow">Round complete</div>
+    <div class="done-score num ${tot.toPar<0?"under":""}">${fmtPar(tot.toPar)}</div>
+    <div class="done-split num">Front <b>${fmtPar(tot.front-tot.frontPar)}</b> · Back <b>${fmtPar(tot.back-tot.backPar)}</b> · ${tot.score} net</div>
+    <p class="done-place">${playing?"Currently ":""}<b>${tied?"T":""}${ord(place)}</b> of ${others.length+1} in the ${divName(t.division)} division${playing?` · ${playing} team${playing===1?"":"s"} still on the course`:""}</p>
+    <button class="btn primary big-confirm" type="button" data-act="board">⚡ See the Live Leaderboard</button>
+    <button class="btn" type="button" data-act="review">Review or edit a hole</button>
+  </section>`;
 }
 function vEntry(t,ps){
   const n=S.hole, h=hole(n);
@@ -951,7 +975,7 @@ function vEntry(t,ps){
       <div class="mini"><span class="lbl">Score</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="s" data-d="-1" aria-label="${esc(p.name)} score down">−</button><output class="num ${d.s==null?"blank":d.s<h.par?"under":d.s>h.par?"over":""}">${d.s??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="s" data-d="1" aria-label="${esc(p.name)} score up">+</button></div></div>
       <div class="mini"><span class="lbl">Putts</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="-1" aria-label="${esc(p.name)} putts down">−</button><output class="num ${d.p==null?"blank":d.p<=1?"p1":d.p===2?"p2":"p3"}">${d.p??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="1" aria-label="${esc(p.name)} putts up">+</button></div></div>
     </div>`}).join("");
-  return `<h2 class="sec-title fit1" data-max="34" data-min="18">Scorecard</h2><section class="panel entry">
+  return `<h2 class="sec-title fit1" data-max="34" data-min="18">Scorecard</h2>${S.review===t.id?`<button class="back" type="button" data-act="reviewdone">← Back to round summary</button>`:""}<section class="panel entry">
     ${holeNav(n,ps)}
     <div class="hole-facts hn-facts num"><span><b>${h.par}</b><small>Par</small></span><span><b>${teeFor(t.division)?.yards?.[n-1]??"–"}</b><small>Yds</small></span><span><b>${h[hcpKey(t.division)]??"–"}</b><small>HCP</small></span></div>
     <div class="prows">${rows}</div>
@@ -1418,19 +1442,25 @@ async function postChat(t,kind,snd){
   const at=new Date().toISOString();
   return db.collection("chat").add(kind==="auto"?{t,kind:"auto",snd:snd||"ping",at,uid:myUid}:{t,pid:me?.id||null,uid:myUid,at,kind:"msg"});
 }
-// Front 9 just completed with this save: post the team's front-nine score
-function turnShout(D){
-  if(D.n>9) return null;
-  const t=S.teams.find(x=>x.id===D.tid); if(!t) return null;
-  if(teamHole(t,D.n)) return null; // this hole was already complete before: an edit, not the finish
+// Team score over a range of holes, counting this phone's unsaved draft for hole D.n. null if any hole is incomplete.
+function draftRange(t,D,from,to){
   const ps=teamPlayers(t.id); if(!ps.length) return null;
   let score=0, par=0;
-  for(let n=1;n<=9;n++){
-    if(n===D.n){ const nets=ps.map(p=>D.v[p.id]?.s!=null?D.v[p.id].s-strokes(p,n):null); if(nets.some(v=>v==null)) return null;
-      score+=Math.min(...nets); par+=hole(n)?.par||0; }
+  for(let n=from;n<=to;n++){
+    if(n===D.n){ const nets=ps.map(p=>D.v[p.id]?.s!=null?D.v[p.id].s-strokes(p,n):null).sort((a,b)=>a-b); if(nets.some(v=>v==null)) return null;
+      const k=Math.min(counts(n),ps.length); score+=nets.slice(0,k).reduce((a,v)=>a+v,0); par+=(hole(n)?.par||0)*k; }
     else { const h=teamHole(t,n); if(!h) return null; score+=h.score; par+=h.par; } }
-  const tp=score-par;
-  return {t:`🏁 ${t.name} made the turn at ${fmtPar(tp)} on the front 9 (${score} net)`,snd:"ping"};
+  return {score,par,tp:score-par};
+}
+// Posts when this save completes the front 9 (the turn) or all 18 (the finish). Edits to an already-complete hole don't repost.
+function turnShout(D){
+  const t=S.teams.find(x=>x.id===D.tid); if(!t) return null;
+  if(teamHole(t,D.n)) return null;
+  const out=[];
+  if(D.n<=9){ const f=draftRange(t,D,1,9); if(f) out.push({t:`🏁 ${t.name} made the turn at ${fmtPar(f.tp)} on the front 9 (${f.score} net)`,snd:"ping"}); }
+  const f=draftRange(t,D,1,9), b=draftRange(t,D,10,18);
+  if(f&&b) out.push({t:`🏆 ${t.name} finished at ${fmtPar(f.tp+b.tp)} (front ${fmtPar(f.tp)}, back ${fmtPar(b.tp)})`,snd:"ping"});
+  return out;
 }
 function shoutouts(D){
   const out=[], h=hole(D.n);
@@ -1444,7 +1474,7 @@ function shoutouts(D){
     else if(diff===-1) out.push({t:`🐦 ${p.name} birdied #${D.n}`,snd:"birdie"});
     if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. +$1 to the pot`,snd:"boo"});
   }
-  const turn=turnShout(D); if(turn) out.push(turn);
+  const turn=turnShout(D); if(turn) out.push(...turn);
   return out;
 }
 function openPick(id){
@@ -1584,6 +1614,8 @@ app.addEventListener("click",async e=>{
   if(act==="board"){return openBoard();}
   if(act==="bdiv"){S.boardDiv=b.dataset.div;return render();}
   if(act==="hole"){S.hole=Number(b.dataset.n);S.draft=null;return render();}
+  if(act==="review"){ S.review=S.teamId; S.draft=null; render(); const en=document.querySelector(".entry"); if(en) window.scrollTo({top:Math.max(0,en.getBoundingClientRect().top+window.scrollY-120)}); return; }
+  if(act==="reviewdone"){ S.review=null; S.draft=null; return render(); }
   if(act==="holenext"){ const n=S.hole, ps=teamPlayers(S.teamId);
     if(ps.length&&!ps.every(p=>entry(p.id,n))) return openSkipWarn(n);
     S.hole=Number(b.dataset.n);S.draft=null;return render();}
@@ -1602,7 +1634,7 @@ app.addEventListener("click",async e=>{
       for(const x of shouts){ try{ await postChat(x.t,"auto",x.snd); }catch(e){} }
       if(shouts.length){ const top=shouts.reduce((m,x)=>SFX_RANK[x.snd]>SFX_RANK[m.snd]?x:m); playSfx(top.snd); }
       if(shouts.length){ const top=shouts.reduce((m,x)=>SFX_RANK[x.snd]>SFX_RANK[m.snd]?x:m); toast(top.t); } else toast(`Hole ${D.n} saved`);
-      if(D.n<18){S.hole=D.n+1;} S.draft=null; render();
+      if(D.n<18){S.hole=D.n+1;} S.draft=null; S.review=null; render();
       const en=document.querySelector(".entry"); if(en){const y=en.getBoundingClientRect().top+window.scrollY-70; window.scrollTo({top:Math.max(0,y),behavior:"smooth"});} }
     catch(err){ b.disabled=false; toast(err?.code==="permission-denied"?"Couldn't save. Reload the page and try again.":"Couldn't save. Check your connection and try again."); }
     return;}
