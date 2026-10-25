@@ -611,6 +611,16 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .done-card .btn{width:100%}
 .back.fwd{background:var(--flag);color:var(--flag-ink);border-radius:999px;padding:6px 14px;min-height:0;box-shadow:0 3px 10px rgba(227,181,27,.45),0 2px 0 rgba(0,0,0,.12);white-space:nowrap}
 .back.fwd:active{transform:translateY(1px);box-shadow:0 1px 4px rgba(227,181,27,.4)}
+.loading-full{min-height:62vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;background:var(--green-soft);border:1px solid var(--line);border-radius:14px;padding:30px 20px}
+.loading-full b{font-family:var(--display);font-size:30px;text-transform:uppercase;letter-spacing:.03em;margin-top:8px}
+.loading-full span{color:var(--muted);font-size:16px}
+.lf-ball{width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 30%,#e9ece6 60%,#c9cfc6 100%);border:1.5px solid #b9c2b6;box-shadow:inset -4px -6px 10px rgba(0,0,0,.12);position:relative;animation:lfBounce .9s cubic-bezier(.3,0,.5,1) infinite alternate}
+.lf-ball::before,.lf-ball::after,.lf-dimple{content:"";position:absolute;width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,.09)}
+.lf-ball::before{top:16px;left:18px}.lf-ball::after{top:26px;left:30px}.lf-dimple{top:34px;left:16px}
+.lf-shadow{width:46px;height:8px;border-radius:50%;background:rgba(0,0,0,.18);animation:lfShadow .9s cubic-bezier(.3,0,.5,1) infinite alternate}
+@keyframes lfBounce{from{transform:translateY(-38px) rotate(0)}to{transform:translateY(0) rotate(160deg)}}
+@keyframes lfShadow{from{transform:scaleX(.55);opacity:.5}to{transform:scaleX(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.lf-ball,.lf-shadow{animation:none}}
 </style>
 </head>
 <body>
@@ -871,7 +881,10 @@ function vChoose(){
   </div>
   <div><div class="eyebrow">${divName(S.div)} division</div><h1>Choose your team</h1></div>
   ${teams.length?`<div class="teams">${teams.map(t=>teamCard(t)).join("")}</div>`
-   :!S.teamsLive?`<div class="empty"><b>Loading teams…</b><span>Hang tight, this only takes a second.</span></div>`
+   :!S.teamsLive?`<div class="loading-full" role="status" aria-live="polite">
+      <div class="lf-ball" aria-hidden="true"><span class="lf-dimple"></span></div>
+      <div class="lf-shadow" aria-hidden="true"></div>
+      <b>Loading teams…</b><span>Hang tight, this only takes a few seconds.</span></div>`
    :`<div class="empty"><b>No ${divName(S.div)} teams yet</b><span>${isAdmin?"Add teams in Admin → Teams.":"Teams appear here as soon as the tournament admin posts them."}</span></div>`}`;
 }
 
