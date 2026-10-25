@@ -871,6 +871,7 @@ function vChoose(){
   </div>
   <div><div class="eyebrow">${divName(S.div)} division</div><h1>Choose your team</h1></div>
   ${teams.length?`<div class="teams">${teams.map(t=>teamCard(t)).join("")}</div>`
+   :!S.teamsLive?`<div class="empty"><b>Loading teams…</b><span>Hang tight, this only takes a second.</span></div>`
    :`<div class="empty"><b>No ${divName(S.div)} teams yet</b><span>${isAdmin?"Add teams in Admin → Teams.":"Teams appear here as soon as the tournament admin posts them."}</span></div>`}`;
 }
 
@@ -1778,6 +1779,7 @@ render();
   firebase.initializeApp(firebaseConfig);
   const auth=firebase.auth();
   db=firebase.firestore();
+  try{ db.settings({experimentalAutoDetectLongPolling:true, merge:true}); }catch(e){}
   const fail=e=>{ console.warn(e); if(e&&e.code==="permission-denied"){ sysBanner("Can't load tournament data. Tournament admin: publish the Firestore security rules (see README)."); } };
   auth.getRedirectResult().catch(()=>{});
   // Load data right away for everyone; sign-in only matters for saving.
@@ -1789,14 +1791,25 @@ render();
           : "Couldn't connect to save scores. Check your connection and reload."); }
       return; }
     authUser=u; myUid=u.uid; sysBanner(null);
+    if(window.__rewatchMissing) window.__rewatchMissing();
     const was=isAdmin; isAdmin=!u.isAnonymous && ADMIN_EMAILS.includes((u.email||"").toLowerCase());
     if(!u.isAnonymous&&!isAdmin){ toast("That Google account isn't the tournament admin."); await auth.signOut(); return; }
     if(isAdmin&&!was) toast("Signed in as admin");
     if(!isAdmin&&S.view==="admin") S.view="welcome";
     render();
   });
+  // Live listeners. If one fails or never answers (first visit while the anonymous sign-in is still being set up,
+  // or a flaky phone connection), restart it instead of leaving the page empty until a reload.
+  const subs={}, makers={}, gotIt={}, tries={};
+  // A snapshot served from the local cache (the phone thinks it is offline) is not the real data yet
+  const got=(k,snap)=>{ if(snap&&snap.metadata&&snap.metadata.fromCache) return; gotIt[k]=true; tries[k]=0; if(k==="teams") S.teamsLive=true; };
+  const watch=(k,make)=>{ makers[k]=make; if(subs[k]){ try{subs[k]();}catch(e){} } try{ subs[k]=make(); }catch(e){ console.warn(e); } };
+  const err=k=>e=>{ fail(e); gotIt[k]=false; const n=tries[k]=(tries[k]||0)+1; if(n<=8) setTimeout(()=>watch(k,makers[k]),Math.min(1000*n,8000)); };
+  const rewatchMissing=()=>{ for(const k in makers) if(!gotIt[k]) watch(k,makers[k]); };
+  window.__rewatchMissing=rewatchMissing;
+  setTimeout(rewatchMissing,5000); setTimeout(rewatchMissing,12000);
   let chatFirst=true;
-  db.collection("chat").orderBy("at","desc").limit(150).onSnapshot(s=>{
+  watch("chat",()=>db.collection("chat").orderBy("at","desc").limit(150).onSnapshot(s=>{ got("chat",s);
     const prevIds=new Set((S.chat||[]).map(x=>x.id));
     S.chat=s.docs.map(d=>({id:d.id,...d.data()}));
     const seen=ls("chatSeen")||"", me=ls("chatMe");
@@ -1809,16 +1822,16 @@ render();
         const p=S.players.find(q=>q.id===x.pid); toast(x.kind==="auto"?x.t:`💬 ${p?.name||"Someone"}: ${x.t}`);}
     }
     chatFirst=false; renderChat();
-  },fail);
-  db.collection("scores").onSnapshot(s=>{const m={};s.docs.forEach(d=>m[d.id]=d.data());S.scores=m;render();},fail);
-  db.collection("players").onSnapshot(s=>{S.players=s.docs.map(d=>({id:d.id,...d.data()}));render();},fail);
-  db.collection("teams").onSnapshot(s=>{S.teams=s.docs.map(d=>({id:d.id,...d.data()}));render();},fail);
-  db.doc("config/course").onSnapshot(s=>{S.course=s.exists?s.data():DEFAULT_COURSE;render();},fail);
-  db.doc("config/event").onSnapshot(s=>{S.event=s.exists?s.data():DEFAULT_EVENT;render();},fail);
-  db.doc("config/hero").onSnapshot(s=>{S.hero=s.exists?s.data():null;render();},fail);
-  db.doc("config/ace").onSnapshot(s=>{S.ace=s.exists?s.data():null; loadAce(S.ace?.data); render();},fail);
-  db.doc("config/heckle").onSnapshot(s=>{S.heckle=s.exists?s.data():null; loadHeckle(S.heckle?.data||DEFAULT_HECKLE); render();},fail);
-  db.doc("config/logo").onSnapshot(s=>{S.logo=s.exists?s.data():null;render();},fail);
+  },err("chat")));
+  watch("scores",()=>db.collection("scores").onSnapshot(s=>{ got("scores",s); const m={};s.docs.forEach(d=>m[d.id]=d.data());S.scores=m;render();},err("scores")));
+  watch("players",()=>db.collection("players").onSnapshot(s=>{ got("players",s); S.players=s.docs.map(d=>({id:d.id,...d.data()}));render();},err("players")));
+  watch("teams",()=>db.collection("teams").onSnapshot(s=>{ got("teams",s); S.teams=s.docs.map(d=>({id:d.id,...d.data()}));render();},err("teams")));
+  watch("course",()=>db.doc("config/course").onSnapshot(s=>{ got("course",s); S.course=s.exists?s.data():DEFAULT_COURSE;render();},err("course")));
+  watch("event",()=>db.doc("config/event").onSnapshot(s=>{ got("event",s); S.event=s.exists?s.data():DEFAULT_EVENT;render();},err("event")));
+  watch("hero",()=>db.doc("config/hero").onSnapshot(s=>{ got("hero",s); S.hero=s.exists?s.data():null;render();},err("hero")));
+  watch("ace",()=>db.doc("config/ace").onSnapshot(s=>{ got("ace",s); S.ace=s.exists?s.data():null; loadAce(S.ace?.data); render();},err("ace")));
+  watch("heckle",()=>db.doc("config/heckle").onSnapshot(s=>{ got("heckle",s); S.heckle=s.exists?s.data():null; loadHeckle(S.heckle?.data||DEFAULT_HECKLE); render();},err("heckle")));
+  watch("logo",()=>db.doc("config/logo").onSnapshot(s=>{ got("logo",s); S.logo=s.exists?s.data():null;render();},err("logo")));
   render();
 })();
 </script>
