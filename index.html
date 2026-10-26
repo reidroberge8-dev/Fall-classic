@@ -733,35 +733,6 @@ function rulesFor(div){
     "Net score is your gross score minus your handicap strokes on that hole.",
     "**Out of bounds** is played as a lateral hazard: drop within **two club lengths** of where the ball crossed the line, with a **one-stroke penalty**.",...DEFAULT_RULES.slice(3)],custom:false};
 }
-function vHome(){
-  const ev=S.event||{}, d=S.div;
-  const meta=[ev.date&&`<span>${esc(fmtDate(ev.date))}</span>`, ev.course&&`<span>${esc(ev.course)}</span>`, ev.format&&`<span>${esc(ev.format)}</span>`].filter(Boolean).join("");
-  return `
-  <div class="navrow"><button class="back" data-act="division" type="button">← Division</button><button class="back fwd" data-act="start" type="button">Continue to teams →</button></div>
-  <section class="hero">
-    <span class="chip ${d==="ladies"?"ladies":""}" style="align-self:flex-start">${divName(d)} division</span>
-    <h1>The Fall Classic</h1>
-    ${meta?`<div class="meta">${meta}</div>`:""}
-  </section>
-  ${ev.welcome?`<p>${esc(ev.welcome)}</p>`:""}
-  <section class="panel games">
-    <h2>Two games, one round</h2>
-    <p>Two games run at the same time during today's round.</p>
-    <div class="game-list">
-      <div><b>Team Competition</b><span>${d==="ladies"?"Teams of four playing a shamble: everyone tees off, the team picks the best drive, then each player plays her own ball in. Front 9: the team's best net score counts. Back 9: the best 2 net scores count.":"Teams of four, everyone plays their own ball. Front 9: the team's best net score counts. Back 9: the best 2 net scores count."}</span></div>
-      <div><b>3-Putt Poker <svg class="chip-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11.5" fill="#c62f2f"/><circle cx="12" cy="12" r="9.5" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="4.4 5.55" transform="rotate(-12 12 12)"/><circle cx="12" cy="12" r="6.3" fill="none" stroke="#fff" stroke-width="1.2" stroke-dasharray="1.6 1.2"/><circle cx="12" cy="12" r="11.5" fill="none" stroke="#8a1c1c" stroke-width="1"/></svg></b><span>Putt everything out (no gimmes) and record every player's putts on each hole. Every 3-putt or worse costs that player $1 to the pot.</span></div>
-    </div>
-    <div class="auto-card"><span aria-hidden="true">✅</span><b>Just enter scores and putts. The app does the rest!</b></div>
-  </section>
-  <h2 class="sec-title">Buy In</h2>
-  <section class="buyin">
-    <div class="bi-item"><b class="num">$10</b><span>Buy-in per player at the start of the round.</span></div>
-    <div class="bi-item"><b class="num">+$1</b><span>Per three-putt or worse, added to the pot.</span></div>
-  </section>
-  ${payoutsPanel(d)}
-  <button class="btn primary big oneline" data-act="start" type="button">Continue to teams →</button>`;
-}
-
 function payoutsPanel(d){
   const potRow=`<div class="payrow poker"><span class="place">3-Putt Poker pot</span><span class="amt num">$${d==="ladies"?40:40}</span><span class="per">+$1 per three-putt</span></div>`;
   return `  <section class="panel">
@@ -877,7 +848,7 @@ function vChoose(){
   const teams=S.teams.filter(t=>t.division===S.div).sort(byTee);
   return `
   <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-    <button class="back" data-act="home" type="button">← Rules</button>
+    <button class="back" data-act="division" type="button">← Division</button>
   </div>
   <div><div class="eyebrow">${divName(S.div)} division</div><h1>Choose your team</h1></div>
   ${teams.length?`<div class="teams">${teams.map(t=>teamCard(t)).join("")}</div>`
@@ -1069,7 +1040,7 @@ function vBoard(){
 
 /* ---------- admin ---------- */
 function vAdmin(){
-  if(!isAdmin) {S.view="home";return vHome();}
+  if(!isAdmin) {S.view="choose";return vChoose();}
   const tabs=[["event","Event & rules"],["course","Course"],["players","Players"],["teams","Teams"],["reset","Reset"]];
   const body=S.adminTab==="event"?aEvent():S.adminTab==="course"?aCourse():S.adminTab==="players"?aPlayers():S.adminTab==="reset"?aReset()+aImport():aTeams();
   return `<div><div class="eyebrow">Tournament admin</div><h1>${esc(eventName())}</h1></div>
@@ -1254,7 +1225,7 @@ function render(){
   document.getElementById("navBoard").setAttribute("aria-pressed",String(!!S.boardOpen));
   renderBoard(); renderRules(); renderChat();
   const html = !db ? `<div class="empty"><b>Connecting…</b><span>If this doesn't load, check your internet connection and reload.</span></div>`
-    : S.view==="choose"?vChoose() : S.view==="board"?vBoard() : S.view==="team"?vTeam() : S.view==="admin"?vAdmin() : vHome();
+    : S.view==="choose"?vChoose() : S.view==="board"?vBoard() : S.view==="team"?vTeam() : S.view==="admin"?vAdmin() : vChoose();
   // preserve focus on inputs during live re-render
   const a=document.activeElement, fid=a&&a.id, sel=a&&a.selectionStart;
   if(fid && /^(ev|p|t|c)[A-Z]/.test(fid) && S.view==="admin") return; // don't clobber a form being typed in
@@ -1612,12 +1583,12 @@ document.getElementById("rulesModal").addEventListener("click",e=>{
 document.getElementById("welcome").addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;
   const a=b.dataset.act;
   if(a==="rules")go("division"); if(a==="admin")go("admin"); if(a==="signin")adminSignIn(); if(a==="welcome")go("welcome");
-  if(a==="pickdiv"){S.div=b.dataset.div;ls("myDiv",S.div);S.courseOpen=false;go("home");}});
+  if(a==="pickdiv"){S.div=b.dataset.div;ls("myDiv",S.div);S.courseOpen=false;go("choose");}});
 
 app.addEventListener("click",async e=>{
   const b=e.target.closest("[data-act]"); if(!b) return;
   const act=b.dataset.act, id=b.dataset.id;
-  if(act==="home") return go("home");
+  if(act==="home") return go("choose");
   if(act==="welcome") return go("welcome");
   if(act==="division") return go("division");
   if(act==="testheckle"){ unlockAudio(); const was=ls("chatSound"); ls("chatSound","on"); playSfx("boo"); if(was) ls("chatSound",was); return; }
