@@ -871,7 +871,7 @@ function vChoose(){
    :!S.teamsLive?`<div class="loading-full" role="status" aria-live="polite">
       <div class="lf-ball" aria-hidden="true"><span class="lf-dimple"></span></div>
       <div class="lf-shadow" aria-hidden="true"></div>
-      <b>Loading teams…</b><span>Hang tight, this only takes a few seconds.</span></div>`
+      <b>Loading teams…</b><span>${S.teamsErr?`Having trouble reaching the scoring database (${esc(S.teamsErr)}). Still trying…`:"Hang tight, this only takes a few seconds."}</span></div>`
    :`<div class="empty"><b>No ${divName(S.div)} teams yet</b><span>${isAdmin?"Add teams in Admin → Teams.":"Teams appear here as soon as the tournament admin posts them."}</span></div>`}`;
 }
 
@@ -1780,7 +1780,7 @@ render();
   const auth=firebase.auth();
   db=firebase.firestore();
   try{ db.settings({experimentalAutoDetectLongPolling:true, merge:true}); }catch(e){}
-  const fail=e=>{ console.warn(e); if(e&&e.code==="permission-denied"){ sysBanner("Can't load tournament data. Tournament admin: publish the Firestore security rules (see README)."); } };
+  const fail=e=>{ console.warn(e); if(e&&e.code==="resource-exhausted"){ sysBanner("The scoring database has hit its daily usage limit. Tournament admin: check Firebase → Firestore → Usage."); } if(e&&e.code==="permission-denied"){ sysBanner("Can't load tournament data. Tournament admin: publish the Firestore security rules (see README)."); } };
   auth.getRedirectResult().catch(()=>{});
   // Load data right away for everyone; sign-in only matters for saving.
   auth.onAuthStateChanged(async u=>{
@@ -1802,9 +1802,9 @@ render();
   // or a flaky phone connection), restart it instead of leaving the page empty until a reload.
   const subs={}, makers={}, gotIt={}, tries={};
   // A snapshot served from the local cache (the phone thinks it is offline) is not the real data yet
-  const got=(k,snap)=>{ if(snap&&snap.metadata&&snap.metadata.fromCache) return; gotIt[k]=true; tries[k]=0; if(k==="teams") S.teamsLive=true; };
+  const got=(k,snap)=>{ if(snap&&snap.metadata&&snap.metadata.fromCache) return; gotIt[k]=true; tries[k]=0; if(k==="teams"){ S.teamsLive=true; S.teamsErr=null; } };
   const watch=(k,make)=>{ makers[k]=make; if(subs[k]){ try{subs[k]();}catch(e){} } try{ subs[k]=make(); }catch(e){ console.warn(e); } };
-  const err=k=>e=>{ fail(e); gotIt[k]=false; const n=tries[k]=(tries[k]||0)+1; if(n<=8) setTimeout(()=>watch(k,makers[k]),Math.min(1000*n,8000)); };
+  const err=k=>e=>{ fail(e); gotIt[k]=false; if(k==="teams"){ S.teamsErr=(e&&e.code)||"unknown"; render(); } const n=tries[k]=(tries[k]||0)+1; if(n<=8) setTimeout(()=>watch(k,makers[k]),Math.min(1000*n,8000)); };
   const rewatchMissing=()=>{ for(const k in makers) if(!gotIt[k]) watch(k,makers[k]); };
   window.__rewatchMissing=rewatchMissing;
   setTimeout(rewatchMissing,5000); setTimeout(rewatchMissing,12000);
