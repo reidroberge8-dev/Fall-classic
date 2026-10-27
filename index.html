@@ -1261,8 +1261,10 @@ let actx=null;
 function soundOn(){ return ls("chatSound")!=="off"; }
 function unlockAudio(){ try{ if(navigator.audioSession&&navigator.audioSession.type!=="playback") navigator.audioSession.type="playback"; }catch(e){}
   try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C){ actx=new C(); if(heckleSrc&&!heckleBuf) setTimeout(()=>loadHeckle(heckleSrc),0); if(aceSrc&&!aceBuf) setTimeout(()=>loadAce(aceSrc),0); } }
-  if(actx&&actx.state==="suspended") actx.resume(); }catch(e){} }
+  if(actx&&actx.state!=="running"&&actx.state!=="closed") actx.resume().catch(()=>{}); }catch(e){} }
 ["touchstart","touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
+// iPhones pause ("interrupt") audio when the screen locks, the app goes to the background or a call comes in. Wake it back up.
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&actx&&actx.state!=="running"&&actx.state!=="closed") actx.resume().catch(()=>{}); });
 function sfxReady(){ if(!soundOn()) return null; unlockAudio(); return (actx&&actx.state==="running")?actx:null; }
 function noiseBuf(a,secs){ const b=a.createBuffer(1,Math.ceil(a.sampleRate*secs),a.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; return b; }
 function outdoor(a,dest,secs,wet){ const c=a.createConvolver(), n=Math.ceil(a.sampleRate*secs), ir=a.createBuffer(2,n,a.sampleRate);
@@ -1371,7 +1373,7 @@ SFX.ace=(a,t)=>{ const dur=3.2, out=a.createGain(); out.connect(a.destination); 
     cg.gain.setValueAtTime(0.05+Math.random()*0.1,st); cg.gain.exponentialRampToValueAtTime(0.0001,st+0.02+Math.random()*0.02);
     c.connect(b); b.connect(cg); cg.connect(bus); c.start(st); c.stop(st+0.04); }
 };
-const SFX_RANK={ace:5,eagle:4,birdie:3,boo:2,ping:1};
+const SFX_RANK={ace:5,eagle:4,birdie:3,boo:2,ping:1,none:0};
 let heckleBuf=null, heckleSrc=null;
 async function loadHeckle(dataUrl){ heckleSrc=dataUrl||null; heckleBuf=null; if(!dataUrl) return;
   try{ unlockAudio(); if(!actx) return; const ab=await (await fetch(dataUrl)).arrayBuffer(); heckleBuf=await actx.decodeAudioData(ab); }catch(e){ console.warn("heckle clip",e); } }
@@ -1386,7 +1388,12 @@ function heckle(){
   // clip not decoded yet: fall back to a plain audio element
   try{ const src=heckleSrc||DEFAULT_HECKLE; if(!heckleEl||heckleEl.dataset.src!==src){ heckleEl=new Audio(src); heckleEl.dataset.src=src; }
     heckleEl.currentTime=0; const pr=heckleEl.play(); if(pr&&pr.catch) pr.catch(()=>{}); }catch(e){} }
-function playSfx(kind){ const a=sfxReady(); if(!a) return; if(kind==="boo") heckle(); try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
+function playSfx(kind){ if(!soundOn()||kind==="none") return; unlockAudio();
+  // If the audio engine is still waking up (common on iPhone after the screen was off), wait briefly instead of skipping the sound.
+  if(actx&&actx.state!=="running"&&actx.state!=="closed"){ let done=false; const go_=()=>{ if(!done&&actx.state==="running"){ done=true; playSfxNow(kind); } };
+    actx.resume().then(go_).catch(()=>{}); setTimeout(go_,400); setTimeout(go_,1200); if(kind==="boo"&&!done){ done=true; heckle(); } return; }
+  playSfxNow(kind); }
+function playSfxNow(kind){ const a=sfxReady(); if(!a){ if(kind==="boo") heckle(); return; } if(kind==="boo") heckle(); try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
   if(kind==="ace"&&aceSrc&&aceBuf&&playClip(aceBuf)) return;
   try{ (SFX[kind]||SFX.ping)(a,a.currentTime+0.02); }catch(e){} }
 function ping(){ playSfx("ping"); }
@@ -1475,7 +1482,7 @@ function shoutouts(D){
     if(d.s===1) out.push({t:`🎯 HOLE IN ONE! ${p.name} aced #${D.n}!`,snd:"ace"});
     else if(diff<=-2) out.push({t:`🦅 ${p.name} eagled #${D.n}!`,snd:"eagle"});
     else if(diff===-1) out.push({t:`🐦 ${p.name} birdied #${D.n}`,snd:"birdie"});
-    if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. +$1 to the pot`,snd:"boo"});
+    if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. +$1 to the pot`,snd:p.division==="ladies"?"none":"boo"}); // no 3-putt sound for the ladies
   }
   const turn=turnShout(D); if(turn) out.push(...turn);
   return out;
@@ -1627,7 +1634,7 @@ app.addEventListener("click",async e=>{
     else d.p = d.p==null ? 2 : Math.max(0,Math.min(9,d.p+dd));
     if(d.p!=null&&d.s!=null&&d.p>d.s)d.p=d.s; return render();}
   if(act==="ackhole"){ const D=S.draft; if(D){ (S.ackHole=S.ackHole||{})[D.tid+":"+D.n]=true; } S.draft=null; return render(); }
-  if(act==="savehole"){const D=S.draft;if(!D)return; (S.savedHere=S.savedHere||{})[D.tid+":"+D.n]=true;
+  if(act==="savehole"){const D=S.draft;if(!D)return; unlockAudio(); (S.savedHere=S.savedHere||{})[D.tid+":"+D.n]=true;
     if(Object.values(D.v).some(d=>d.s==null||d.p==null)) return toast("Enter every golfer's score and putts first.");
     b.disabled=true;
     const shouts=shoutouts(D);
@@ -1635,7 +1642,7 @@ app.addEventListener("click",async e=>{
         const ref=db.doc("scores/"+pid);
         await ref.set({h:{[D.n]:{s:d.s,p:d.p}},by:myUid},{merge:true}); }
       for(const x of shouts){ try{ await postChat(x.t,"auto",x.snd); }catch(e){} }
-      if(shouts.length){ const top=shouts.reduce((m,x)=>SFX_RANK[x.snd]>SFX_RANK[m.snd]?x:m); playSfx(top.snd); }
+      if(shouts.length){ const top=shouts.reduce((m,x)=>(SFX_RANK[x.snd]??0)>(SFX_RANK[m.snd]??0)?x:m); playSfx(top.snd); }
       if(shouts.length){ const top=shouts.reduce((m,x)=>SFX_RANK[x.snd]>SFX_RANK[m.snd]?x:m); toast(top.t); } else toast(`Hole ${D.n} saved`);
       if(D.n<18){S.hole=D.n+1;} S.draft=null; S.review=null; render();
       const en=document.querySelector(".entry"); if(en){const y=en.getBoundingClientRect().top+window.scrollY-70; window.scrollTo({top:Math.max(0,y),behavior:"smooth"});} }
@@ -1814,7 +1821,7 @@ render();
     S.chat=s.docs.map(d=>({id:d.id,...d.data()}));
     const seen=ls("chatSeen")||"", me=ls("chatMe");
     const fresh=S.chat.filter(x=>!prevIds.has(x.id)&&!(x.kind!=="auto"&&x.pid===me)&&x.uid!==myUid);
-    if(!chatFirst&&fresh.length){ const k=fresh.map(x=>x.kind==="auto"?(x.snd||"ping"):"ping").reduce((m,k)=>(SFX_RANK[k]||1)>(SFX_RANK[m]||1)?k:m,"ping"); playSfx(k); }
+    if(!chatFirst&&fresh.length){ const k=fresh.map(x=>x.kind==="auto"?(x.snd||"ping"):"ping").reduce((m,k)=>(SFX_RANK[k]??1)>(SFX_RANK[m]??1)?k:m,"none"); playSfx(k); }
     if(S.chatOpen){markSeen();}
     else{
       S.chatUnread=S.chat.some(x=>(x.at||"")>seen&&!(x.kind!=="auto"&&x.pid===me));
