@@ -734,12 +734,12 @@ function rulesFor(div){
     "**Out of bounds** is played as a lateral hazard: drop within **two club lengths** of where the ball crossed the line, with a **one-stroke penalty**.",...DEFAULT_RULES.slice(3)],custom:false};
 }
 function payoutsPanel(d){
-  const potRow=`<div class="payrow poker"><span class="place">3-Putt Poker pot</span><span class="amt num">$${d==="ladies"?40:40}</span><span class="per">+$1 per three-putt</span></div>`;
+  const potRow=`<div class="payrow poker"><span class="place">3-Putt Poker pot</span><span class="amt num">$${d==="ladies"?30:40}</span><span class="per">+$1 per three-putt</span></div>`;
   return `  <section class="panel">
     <h2>${divName(d)} Division Payouts</h2>
     ${d==="ladies"?`<div class="payrow"><span class="place">1st place team</span><span class="amt num">+1 🃏</span><span class="per">Each player gets an extra card for 3-Putt Poker</span></div>
-      <div class="payrow"><span class="place">Lowest total putts</span><span class="amt num">$20</span><span class="per">Individual prize</span></div>
-      <div class="payrow"><span class="place">Lowest net score</span><span class="amt num">$20</span><span class="per">Individual prize</span></div>
+      <div class="payrow"><span class="place">Lowest total putts</span><span class="amt num">$15</span><span class="per">Individual prize</span></div>
+      <div class="payrow"><span class="place">Lowest net score</span><span class="amt num">$15</span><span class="per">Individual prize</span></div>
       ${potRow}
       <p class="note">Individual prizes go to one golfer each. Ties split the prize.</p>`
     :`<div class="payrow"><span class="place">1st place team</span><span class="amt num">$80</span><span class="per num">$20 per player</span></div>
@@ -763,7 +763,7 @@ function vRulesModal(){
   </section>
   <section class="panel">
     <h2>3-Putt Poker</h2>
-    <div class="payrow poker" style="border-top:0;margin-top:0"><span class="place">${divName(d)} starting pot</span><span class="amt num">$${d==="ladies"?40:40}</span><span class="per">Grows $1 with every three-putt</span></div>
+    <div class="payrow poker" style="border-top:0;margin-top:0"><span class="place">${divName(d)} starting pot</span><span class="amt num">$${d==="ladies"?30:40}</span><span class="per">Grows $1 with every three-putt</span></div>
     <ol class="rules">
       <li><span><b>Putt everything out</b> and record every player's number of putts on each hole.</span></li>
       <li><span>Only strokes taken <b>on the green</b> count as putts. Putting from the fringe or fairway doesn't count.</span></li>
@@ -1015,7 +1015,7 @@ function vBoard(){
   const pl=S.players.filter(p=>p.division===d).map(p=>({p,c:pc(p)})).filter(r=>r.c.holes)
     .sort((a,b)=>b.c.one-a.c.one||a.c.three-b.c.three||byName(a.p,b.p));
   const maxOne=pl.reduce((m,r)=>Math.max(m,r.c.one),0);
-  const POKER_START=40;
+  const POKER_START=d==="ladies"?30:40;
   let threes=0; for(const p of S.players){ if(p.division!==d||!S.teams.some(t=>t.id===p.teamId)) continue; for(let n=1;n<=18;n++){const e=entry(p.id,n); if(e&&Number(e.p)>=3) threes++;} }
   return `
   <div class="seg" role="group" aria-label="Division">
