@@ -722,16 +722,15 @@ function rulesFor(div){
   const custom=raw.split("\n").map(s=>s.replace(/^\s*[-•*\d.)]+\s*/,"").trim()).filter(Boolean);
   if(custom.length) return {list:custom,custom:true};
   const tee=(div==="ladies"?ev.ladiesTee||"Red":ev.menTee||"White");
-  return {list:["Teams of 4 will tee off together.",
-    `${divName(div)} division plays from the ${tee} tees.`,
+  return {list:[`${divName(div)} division plays from the ${tee} tees.`,
     div==="ladies"
-      ? "**Shamble:** all four players tee off, the team picks the best drive, and each player plays her own ball in from there."
+      ? "**Shamble:** the team picks the best drive, then each player plays her own ball in."
       : "Everyone plays their own ball from tee to green.",
     "Record every player's score and number of putts on each hole.",
     "Front 9: the team's **single lowest** net score on each hole counts as the team score.",
     "Back 9: the team's **two lowest** net scores on each hole count as the team score.",
     "Net score is your gross score minus your handicap strokes on that hole.",
-    "**Out of bounds** is played as a lateral hazard: drop within **two club lengths** of where the ball crossed the line, with a **one-stroke penalty**.",...DEFAULT_RULES.slice(3)],custom:false};
+    "**Out of bounds** is played as a lateral hazard: drop within **two club lengths** of where the ball crossed the line, with a **one-stroke penalty**."],custom:false};
 }
 function payoutsPanel(d){
   const potRow=`<div class="payrow poker"><span class="place">3-Putt Poker pot</span><span class="amt num">$${d==="ladies"?30:40}</span><span class="per">+$1 per three-putt</span></div>`;
@@ -757,6 +756,10 @@ function vRulesModal(){
     <button type="button" data-act="rdiv" data-div="men" aria-pressed="${d==="men"}">Men's</button>
     <button type="button" data-act="rdiv" data-div="ladies" aria-pressed="${d==="ladies"}">Ladies'</button></div>
   <section class="panel">
+    <h2>Pace of Play</h2>
+    <p style="margin:0">Play ready golf and keep pace with the group ahead.</p>
+  </section>
+  <section class="panel">
     <h2>Team Competition</h2>
     <ol class="rules">${list.map(r=>`<li><span>${esc(r).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</span></li>`).join("")}</ol>
     ${custom?"":`<p class="note">These are starter rules. ${isAdmin?"Edit them in Admin → Event &amp; rules.":"The tournament admin will post the final rules."}</p>`}
@@ -765,7 +768,7 @@ function vRulesModal(){
     <h2>3-Putt Poker</h2>
     <div class="payrow poker" style="border-top:0;margin-top:0"><span class="place">${divName(d)} starting pot</span><span class="amt num">$${d==="ladies"?30:40}</span><span class="per">Grows $1 with every three-putt</span></div>
     <ol class="rules">
-      <li><span><b>Putt everything out</b> and record every player's number of putts on each hole.</span></li>
+      <li><span><b>Putt everything out</b> (no gimmes) and record every player's number of putts on each hole.</span></li>
       <li><span>Only strokes taken <b>on the green</b> count as putts. Putting from the fringe or fairway doesn't count.</span></li>
       <li><span>Each player starts the round with <b>two cards</b>.</span></li>
       <li><span>Every <b>one-putt</b> earns that player <b>one more card</b>.</span></li>
@@ -773,6 +776,13 @@ function vRulesModal(){
       <li><span>After the round, each player makes their <b>best five-card poker hand</b> from the cards they earned. The best hand wins the pot.</span></li>
     </ol>
     ${handRanks()}
+  </section>
+  <section class="panel">
+    <h2>Buy-in</h2>
+    <div class="buyin">
+      <div class="bi-item"><b class="num">$10</b><span>Buy-in per player at the start of the round.</span></div>
+      <div class="bi-item"><b class="num">+$1</b><span>Per three-putt or worse, added to the pot.</span></div>
+    </div>
   </section>
 ${payoutsPanel(d)}
 `;
