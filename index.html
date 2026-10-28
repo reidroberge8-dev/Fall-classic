@@ -592,6 +592,8 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 .pot-sub{font-size:13px}
 .chip-ico{width:1.1em;height:1.1em;vertical-align:-.18em;margin-left:.1em;display:inline-block}
 .putt-table th.c,.putt-table td.c{text-align:center}
+.putt-table th,.putt-table td{padding-left:3px;padding-right:3px}
+.putt-table th{font-size:11px;letter-spacing:.04em}
 .putt-table td.c{position:relative}
 .putt-table td.c .star{position:absolute;margin-left:4px}
 .lb-grid{grid-template-columns:22px minmax(0,1fr) 64px 54px;gap:8px}
@@ -789,6 +791,7 @@ function vRulesModal(){
       <li><span>Only strokes taken <b>on the green</b> count as putts. Putting from the fringe or fairway doesn't count.</span></li>
       <li><span>Each player starts the round with <b>two cards</b>.</span></li>
       <li><span>Every <b>one-putt</b> earns that player <b>one more card</b>.</span></li>
+      <li><span>Every <b>chip-in</b> (zero putts) earns that player <b>two more cards</b>.</span></li>
       <li><span>Every <b>three-putt or worse</b>, the player owes <b>$1</b> to the pot.</span></li>
       <li><span>After the round, each player makes their <b>best five-card poker hand</b> from the cards they earned. The best hand wins the pot.</span></li>
     </ol>
@@ -1020,8 +1023,8 @@ function vTeamCard(t,ps,bare){
     const prow=p=>{let tot=0;const cells=hs.map(n=>{const e=entry(p.id,n);const v=e?Number(e.p):null;if(v!=null&&!isNaN(v))tot+=v;return `<td class="${pc(v)}">${v??""}</td>`}).join("");
       return `<tr><th scope="row">${esc(p.name.split(" ")[0])}</th>${cells}<td class="sum">${tot||""}</td></tr>`;};
     return `<div class="scroll"><table class="grid num putt-grid ${t.division==="ladies"?"lad":""}"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">Tot</th></tr></thead><tbody>${ps.map(prow).join("")}</tbody></table></div>`;};
-  const pcount=p=>{let one=0,three=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(!e)continue;const v=Number(e.p);if(v===1)one++;else if(v>=3)three++;}return {one,three};};
-  const putts=`<table class="card-table num"><thead><tr><th>Golfer</th><th class="r">1-putts</th><th class="r">3+ putts</th></tr></thead><tbody>${ps.map(p=>{const c=pcount(p);return `<tr><td>${esc(p.name)}</td><td class="r p1"><b>${c.one}</b></td><td class="r p3"><b>${c.three}</b></td></tr>`}).join("")}</tbody></table>`;
+  const pcount=p=>{let zero=0,one=0,three=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(!e)continue;const v=Number(e.p);if(v===0)zero++;else if(v===1)one++;else if(v>=3)three++;}return {zero,one,three,cards:2+one+2*zero};};
+  const putts=`<table class="card-table num"><thead><tr><th>Golfer</th><th class="r">Chip-ins</th><th class="r">1-putts</th><th class="r">3+ putts</th><th class="r">Cards</th></tr></thead><tbody>${ps.map(p=>{const c=pcount(p);return `<tr><td>${esc(p.name)}</td><td class="r p1"><b>${c.zero}</b></td><td class="r p1"><b>${c.one}</b></td><td class="r p3"><b>${c.three}</b></td><td class="r"><b>${c.cards}</b></td></tr>`}).join("")}</tbody></table><p class="note">Cards = 2 to start, +1 per 1-putt, +2 per chip-in.</p>`;
   const inner=`<div class="sc-cap"><b>Front 9</b> · Best <b class="n">1</b> net score</div>${half(1,9,"Out")}<div class="sc-cap"><b>Back 9</b> · Best <b class="n">2</b> net scores</div>${half(10,18,"In")}<p class="note sc-note">Big number = gross score. Small number = net score.</p>`;
   if(bare) return inner;
   return `<section class="panel"><h2>Team scorecard</h2>${inner}<h3>Putts</h3>${putts}</section>
@@ -1039,9 +1042,9 @@ function vBoard(){
       <span class="r"><b>${r.x.thru?fmtPar(r.x.toPar):"–"}</b></span><span class="r">${r.x.thru?(r.x.thru===18?"F":r.x.thru):(r.t.teeTime?fmtTime(r.t.teeTime):"–")}</span></summary>
       <div class="lb-body">${open?(ps.length?vTeamCard(r.t,ps,true):`<p class="muted">No golfers on this team yet.</p>`):""}</div>
     </details>`}).join("");
-  const pc=p=>{let one=0,three=0,holes=0,tot=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(!e)continue;holes++;const v=Number(e.p);if(!isNaN(v))tot+=v;if(v===1)one++;else if(v>=3)three++;}return {one,three,holes,tot};};
+  const pc=p=>{let zero=0,one=0,three=0,holes=0,tot=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(!e)continue;holes++;const v=Number(e.p);if(!isNaN(v))tot+=v;if(v===0)zero++;else if(v===1)one++;else if(v>=3)three++;}return {zero,one,three,holes,tot,cards:2+one+2*zero};};
   const pl=S.players.filter(p=>p.division===d).map(p=>({p,c:pc(p)})).filter(r=>r.c.holes)
-    .sort((a,b)=>b.c.one-a.c.one||a.c.three-b.c.three||byName(a.p,b.p));
+    .sort((a,b)=>b.c.cards-a.c.cards||b.c.one-a.c.one||a.c.three-b.c.three||byName(a.p,b.p));
   const maxOne=pl.reduce((m,r)=>Math.max(m,r.c.one),0);
   const POKER_START=d==="ladies"?30:40;
   let threes=0; for(const p of S.players){ if(p.division!==d||!S.teams.some(t=>t.id===p.teamId)) continue; for(let n=1;n<=18;n++){const e=entry(p.id,n); if(e&&Number(e.p)>=3) threes++;} }
@@ -1062,8 +1065,8 @@ function vBoard(){
     <p class="note">Net, to par. A hole counts once every golfer on the team has entered a score.</p></section>`
     :`<div class="empty"><b>No ${divName(d)} teams yet</b></div>`}
   ${pl.length?`<section class="panel"><h2>Putting</h2><div class="scroll"><table class="card-table num putt-table">
-    <thead><tr><th>Golfer</th><th class="c">1-putts</th><th class="c">3+</th><th class="c">Owed</th><th class="c">Putts</th></tr></thead>
-    <tbody>${pl.map(r=>`<tr><td>${esc(r.p.name)}</td><td class="c p1"><b>${r.c.one}</b>${maxOne>0&&r.c.one===maxOne?` <span class="star" aria-label="most 1-putts">★</span>`:""}</td><td class="c p3"><b>${r.c.three}</b></td><td class="c ${r.c.three?"p3":"muted"}"><b>$${r.c.three}</b></td><td class="c"><b>${r.c.tot}</b><span class="thru-sm">thru ${r.c.holes}</span></td></tr>`).join("")}</tbody></table></div></section>`:""}`;
+    <thead><tr><th>Golfer</th><th class="c">Cards</th><th class="c">Chip-ins</th><th class="c">1-putts</th><th class="c">Owed</th><th class="c">Putts</th></tr></thead>
+    <tbody>${pl.map(r=>`<tr><td>${esc(r.p.name)}</td><td class="c"><b>${r.c.cards}</b></td><td class="c p1"><b>${r.c.zero}</b></td><td class="c p1"><b>${r.c.one}</b>${maxOne>0&&r.c.one===maxOne?` <span class="star" aria-label="most 1-putts">★</span>`:""}</td><td class="c ${r.c.three?"p3":"muted"}"><b>$${r.c.three}</b></td><td class="c"><b>${r.c.tot}</b><span class="thru-sm">thru ${r.c.holes}</span></td></tr>`).join("")}</tbody></table></div><p class="note">Cards = 2 to start, +1 per 1-putt, +2 per chip-in (zero putts).</p></section>`:""}`;
 }
 
 /* ---------- admin ---------- */
@@ -1494,6 +1497,7 @@ function shoutouts(D){
     if(d.s===1) out.push({t:`🎯 HOLE IN ONE! ${p.name} aced #${D.n}!`,snd:"ace"});
     else if(diff<=-2) out.push({t:`🦅 ${p.name} eagled #${D.n}!`,snd:"eagle"});
     else if(diff===-1) out.push({t:`🐦 ${p.name} birdied #${D.n}`,snd:"birdie"});
+    if(Number(d.p)===0&&(!prev||Number(prev.p)!==0)) out.push({t:`🪄 ${p.name} chipped in on #${D.n}! +2 cards`,snd:"birdie"});
     if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. +$1 to the pot`,snd:p.division==="ladies"?"none":"boo"}); // no 3-putt sound for the ladies
   }
   const turn=turnShout(D); if(turn) out.push(...turn);
