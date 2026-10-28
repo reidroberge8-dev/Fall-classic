@@ -92,6 +92,10 @@ p{margin:0}
 .btn.danger.armed{background:var(--danger);color:var(--surface);border-color:var(--danger)}
 .btn.sm{min-height:34px;padding:4px 10px;font-size:14px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:not(:disabled):active{transform:scale(.97);filter:brightness(.92)}
+.btn.saving,.btn.saving:disabled{opacity:1;cursor:progress}
+.spin{width:16px;height:16px;border-radius:50%;border:2.5px solid currentColor;border-right-color:transparent;display:inline-block;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 .seg{display:grid;grid-template-columns:1fr 1fr;background:var(--sunk);border-radius:10px;padding:4px;gap:4px}
 .seg button{border:0;background:transparent;border-radius:7px;padding:10px;font-family:var(--display);font-weight:700;font-size:19px;
@@ -985,7 +989,8 @@ function vEntry(t,ps){
     <div class="hole-sum num">${full?`Team on this hole: <b>${tscore}</b> net (${fmtPar(tscore-h.par*k)})`:`Tap + or − to enter each golfer's score and putts. The first tap sets par for score and 2 for putts.`}</div>
     <div class="row-actions save-bar">
       ${allIn?`<button class="btn" type="button" data-act="clearhole">Clear hole</button>`:""}
-      <button class="btn primary" type="button" data-act="savehole" style="flex:1" ${ready?"":"disabled"}>${ready?`${allIn?"Update":"Save"} scores${n<18?" & go to next hole":""}`:`Enter all scores and putts`}</button>
+      ${S.saving===t.id+":"+n?`<button class="btn primary saving" type="button" style="flex:1" disabled aria-live="polite"><span class="spin" aria-hidden="true"></span> Saving…</button>`
+       :`<button class="btn primary" type="button" data-act="savehole" style="flex:1" ${ready?"":"disabled"}>${ready?`${allIn?"Update":"Save"} scores${n<18?" & go to next hole":""}`:`Enter all scores and putts`}</button>`}
     </div>
   </section>`;
 }
@@ -1636,17 +1641,23 @@ app.addEventListener("click",async e=>{
   if(act==="ackhole"){ const D=S.draft; if(D){ (S.ackHole=S.ackHole||{})[D.tid+":"+D.n]=true; } S.draft=null; return render(); }
   if(act==="savehole"){const D=S.draft;if(!D)return; unlockAudio(); (S.savedHere=S.savedHere||{})[D.tid+":"+D.n]=true;
     if(Object.values(D.v).some(d=>d.s==null||d.p==null)) return toast("Enter every golfer's score and putts first.");
-    b.disabled=true;
+    if(S.saving) return;
+    const key=D.tid+":"+D.n; S.saving=key; render(); try{ navigator.vibrate&&navigator.vibrate(15); }catch(e){}
     const shouts=shoutouts(D);
-    try{ for(const [pid,d] of Object.entries(D.v)){ if(!S.players.some(p=>p.id===pid&&p.teamId===D.tid)) continue;
-        const ref=db.doc("scores/"+pid);
-        await ref.set({h:{[D.n]:{s:d.s,p:d.p}},by:myUid},{merge:true}); }
-      for(const x of shouts){ try{ await postChat(x.t,"auto",x.snd); }catch(e){} }
-      if(shouts.length){ const top=shouts.reduce((m,x)=>(SFX_RANK[x.snd]??0)>(SFX_RANK[m.snd]??0)?x:m); playSfx(top.snd); }
-      if(shouts.length){ const top=shouts.reduce((m,x)=>SFX_RANK[x.snd]>SFX_RANK[m.snd]?x:m); toast(top.t); } else toast(`Hole ${D.n} saved`);
-      if(D.n<18){S.hole=D.n+1;} S.draft=null; S.review=null; render();
-      const en=document.querySelector(".entry"); if(en){const y=en.getBoundingClientRect().top+window.scrollY-70; window.scrollTo({top:Math.max(0,y),behavior:"smooth"});} }
-    catch(err){ b.disabled=false; toast(err?.code==="permission-denied"?"Couldn't save. Reload the page and try again.":"Couldn't save. Check your connection and try again."); }
+    const writes=Object.entries(D.v).filter(([pid])=>S.players.some(p=>p.id===pid&&p.teamId===D.tid))
+      .map(([pid,d])=>db.doc("scores/"+pid).set({h:{[D.n]:{s:d.s,p:d.p}},by:myUid},{merge:true}));
+    const all=Promise.all(writes);
+    let failed=false;
+    all.then(()=>{ for(const x of shouts) postChat(x.t,"auto",x.snd).catch(()=>{}); })
+       .catch(err=>{ failed=true; if(S.saving===key) S.saving=null; render();
+         toast(err?.code==="permission-denied"?`Hole ${D.n} didn't save. Reload the page and enter it again.`:`Hole ${D.n} didn't save. Check your connection, go back to hole ${D.n} and save again.`); });
+    // Move on as soon as the scores are saved, or after a moment on a slow connection (the save keeps going in the background).
+    await Promise.race([all.catch(()=>{}), new Promise(r=>setTimeout(r,900))]);
+    if(failed) return;
+    S.saving=null;
+    if(shouts.length){ const top=shouts.reduce((m,x)=>(SFX_RANK[x.snd]??0)>(SFX_RANK[m.snd]??0)?x:m); playSfx(top.snd); toast(top.t); } else toast(`✓ Hole ${D.n} saved`);
+    if(D.n<18){S.hole=D.n+1;} S.draft=null; S.review=null; render();
+    const en=document.querySelector(".entry"); if(en){const y=en.getBoundingClientRect().top+window.scrollY-70; window.scrollTo({top:Math.max(0,y),behavior:"smooth"});}
     return;}
   if(act==="clearhole"){const D=S.draft;if(!D)return;b.disabled=true;
     await write(async()=>{for(const pid of Object.keys(D.v)) if(S.scores[pid]) await db.doc("scores/"+pid).update({["h."+D.n]:firebase.firestore.FieldValue.delete()});},`Hole ${D.n} cleared`);S.draft=null;render();return;}
