@@ -989,14 +989,19 @@ function vEntry(t,ps){
   // Another phone on this team saved this hole while we were on it: tell this phone and offer the next hole
   const hkey=t.id+":"+n;
   if(S.draft.startedEmpty&&allIn&&!(S.savedHere||{})[hkey]&&!(S.ackHole||{})[hkey]){
+    // Collect every hole in a row (starting here) that teammates have already finished, so a phone that fell behind hears about all of them.
+    const done=[]; for(let m=n;m<=18&&ps.every(p=>entry(p.id,m));m++) done.push(m);
+    const next=done[done.length-1]+1;
+    const list=done.length===1?`${done[0]}`:done.length===2?`${done[0]} and ${done[1]}`:`${done.slice(0,-1).join(", ")} and ${done[done.length-1]}`;
+    const many=done.length>1;
     return `<h2 class="sec-title fit1" data-max="34" data-min="18">Scorecard</h2><section class="panel entry">
       ${holeNav(n,ps)}
       <div class="taken" role="alert">
         <div class="taken-ic" aria-hidden="true">✅</div>
-        <h2>Hole ${n} is already in</h2>
-        <p>Someone else on your team already entered scores for hole ${n}.${n<18?` Head on to hole ${n+1}.`:""}</p>
+        <h2>${many?`Holes ${list} are already in`:`Hole ${n} is already in`}</h2>
+        <p>Someone else on your team already entered scores for ${many?`holes ${list}`:`hole ${n}`}.${next<=18?` Pick up on hole ${next}.`:" Your round is complete."}</p>
         <div class="taken-actions">
-          ${n<18?`<button class="btn primary big-ish" type="button" data-act="hole" data-n="${n+1}">Go to hole ${n+1}</button>`:""}
+          ${next<=18?`<button class="btn primary big-ish" type="button" data-act="hole" data-n="${next}">Go to hole ${next}</button>`:""}
           <button class="btn" type="button" data-act="ackhole">Review or edit hole ${n}</button>
         </div>
       </div>
