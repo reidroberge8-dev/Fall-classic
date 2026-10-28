@@ -640,6 +640,17 @@ button,a,summary,label,input,select{-webkit-tap-highlight-color:transparent;touc
 @keyframes lfBounce{from{transform:translateY(-38px) rotate(0)}to{transform:translateY(0) rotate(160deg)}}
 @keyframes lfShadow{from{transform:scaleX(.55);opacity:.5}to{transform:scaleX(1);opacity:1}}
 @media (prefers-reduced-motion:reduce){.lf-ball,.lf-shadow{animation:none}}
+
+/* ---- Scorecard grid: always fits the screen width, same look on every phone ---- */
+table.grid{table-layout:fixed;width:100%;font-size:clamp(10px,3.4vw,15px)}
+table.grid th,table.grid td{min-width:0;padding:6px 0;white-space:nowrap;overflow:visible}
+table.grid thead th,table.grid tr>th[scope=row]{font-size:.9em}
+table.grid tr>th:first-child{width:16%;padding-left:4px;text-align:left;overflow:hidden;text-overflow:ellipsis}
+table.grid .sum{width:10%}
+table.grid .mk{width:1.3em;height:1.3em;font-size:1em;outline-offset:1px}
+table.grid .mk.bd,table.grid .mk.eg,table.grid .mk.bg,table.grid .mk.db,table.grid .mk.tb{border-width:1px;outline-width:1px}
+table.grid .netsup{font-size:.6em;vertical-align:super;line-height:0;margin-left:.08em;display:inline}
+.putt-grid td{font-size:1em}
 </style>
 </head>
 <body>
