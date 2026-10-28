@@ -26,7 +26,7 @@ img{max-width:100%}
   --fg:#18231c; --muted:#5a6a5f;
   --green:#1d5c3a; --green-ink:#ffffff; --green-soft:#dcebdf;
   --flag:#e3b51b; --flag-ink:#2a2200;
-  --ladies:#8a3a6a; --ladies-soft:#f2e1ea;
+  --ladies:#8a3a6a; --ladies-soft:#f2e1ea; --par-bg:#f5eed3;
   --danger:#b3261e; --mk:rgba(60,80,66,.45);
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -36,14 +36,14 @@ img{max-width:100%}
   --fg:#e7eee8; --muted:#97a69b;
   --green:#3f9a67; --green-ink:#06140b; --green-soft:#1d3426;
   --flag:#f0c63a; --flag-ink:#1c1600;
-  --ladies:#d986b6; --ladies-soft:#3a2231;
+  --ladies:#d986b6; --ladies-soft:#3a2231; --par-bg:#2c2a1b;
   --danger:#ff8a80; --mk:rgba(190,205,194,.45); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#101612; --surface:#18201a; --sunk:#1f2a22; --line:#2e3b31;
   --fg:#e7eee8; --muted:#97a69b;
   --green:#3f9a67; --green-ink:#06140b; --green-soft:#1d3426;
   --flag:#f0c63a; --flag-ink:#1c1600;
-  --ladies:#d986b6; --ladies-soft:#3a2231;
+  --ladies:#d986b6; --ladies-soft:#3a2231; --par-bg:#2c2a1b;
   --danger:#ff8a80; --mk:rgba(190,205,194,.45); color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -216,6 +216,11 @@ details.course:not([open]){gap:0}
 .grid thead th{font-size:12px;color:var(--muted);border-bottom:2px solid var(--fg)}
 .grid th[scope=row]{text-align:left;padding-left:2px;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis}
 .grid tr.par td,.grid tr.par th{color:var(--muted)}
+.grid thead th{background:var(--green);color:var(--green-ink);border-bottom:0;font-weight:700}
+.grid.lad thead th{background:var(--ladies);color:var(--surface)}
+.grid thead th.sum{background:var(--green);filter:brightness(.85)}
+.grid.lad thead th.sum{background:var(--ladies)}
+.grid tr.par th,.grid tr.par td,.grid tr.par td.sum{background:var(--par-bg);color:var(--fg);font-weight:600}
 .grid td.cnt{background:var(--green-soft);font-weight:700}
 .grid .sum{font-weight:700;background:var(--sunk)}
 .grid tr.team-row th,.grid tr.team-row td{font-weight:700;border-top:2px solid var(--fg)}
@@ -1003,7 +1008,7 @@ function vTeamCard(t,ps,bare){
       return `<td class="${cnt?"cnt":""}">${e?`${mark(e.s,hole(n).par)}<sup class="netsup" aria-label="net ${e.s-strokes(p,n)}">${e.s-strokes(p,n)}</sup>`:""}</td>`}).join("");
       return `<tr><th scope="row">${esc(p.name.split(" ")[0])}</th>${cells}<td class="sum">${g||""}</td></tr>`;};
     let ts=0;const tcells=hs.map(n=>{const th=teamHole(t,n);if(th)ts+=th.score;return `<td>${th?th.score:""}</td>`}).join("");
-    return `<div class="scroll"><table class="grid num"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">Tot</th></tr></thead>
+    return `<div class="scroll"><table class="grid num ${t.division==="ladies"?"lad":""}"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">Tot</th></tr></thead>
       <tbody><tr class="par"><th scope="row">Par</th>${hs.map(n=>`<td>${hole(n).par}</td>`).join("")}<td class="sum">${pr}</td></tr>
       ${ps.map(prow).join("")}
       <tr class="team-row"><th scope="row">Team</th>${tcells}<td class="sum">${ts||""}</td></tr></tbody></table></div>`;
@@ -1012,7 +1017,7 @@ function vTeamCard(t,ps,bare){
   const puttHalf=(a,b,lbl)=>{const hs=rng(a,b);
     const prow=p=>{let tot=0;const cells=hs.map(n=>{const e=entry(p.id,n);const v=e?Number(e.p):null;if(v!=null&&!isNaN(v))tot+=v;return `<td class="${pc(v)}">${v??""}</td>`}).join("");
       return `<tr><th scope="row">${esc(p.name.split(" ")[0])}</th>${cells}<td class="sum">${tot||""}</td></tr>`;};
-    return `<div class="scroll"><table class="grid num putt-grid"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">Tot</th></tr></thead><tbody>${ps.map(prow).join("")}</tbody></table></div>`;};
+    return `<div class="scroll"><table class="grid num putt-grid ${t.division==="ladies"?"lad":""}"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">Tot</th></tr></thead><tbody>${ps.map(prow).join("")}</tbody></table></div>`;};
   const pcount=p=>{let one=0,three=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(!e)continue;const v=Number(e.p);if(v===1)one++;else if(v>=3)three++;}return {one,three};};
   const putts=`<table class="card-table num"><thead><tr><th>Golfer</th><th class="r">1-putts</th><th class="r">3+ putts</th></tr></thead><tbody>${ps.map(p=>{const c=pcount(p);return `<tr><td>${esc(p.name)}</td><td class="r p1"><b>${c.one}</b></td><td class="r p3"><b>${c.three}</b></td></tr>`}).join("")}</tbody></table>`;
   const inner=`<div class="sc-cap"><b>Front 9</b> · Best <b class="n">1</b> net score</div>${half(1,9,"Out")}<div class="sc-cap"><b>Back 9</b> · Best <b class="n">2</b> net scores</div>${half(10,18,"In")}`;
