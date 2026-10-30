@@ -986,6 +986,25 @@ function vEntry(t,ps){
   const v=S.draft.v; ps.forEach(p=>{if(!v[p.id])v[p.id]={s:null,p:null,had:false};});
   const ready=ps.every(p=>v[p.id].s!=null&&v[p.id].p!=null);
   const allIn=ps.every(p=>entry(p.id,n));
+  // Saved the last hole but earlier holes are still missing: list them and offer the first one
+  if(S.missing&&S.missing.tid===t.id&&S.missing.from===n){
+    const miss=[]; for(let m=1;m<=18;m++) if(!ps.every(p=>entry(p.id,m))) miss.push(m);
+    if(miss.length){
+      const list=miss.length===1?`${miss[0]}`:miss.length===2?`${miss[0]} and ${miss[1]}`:`${miss.slice(0,-1).join(", ")} and ${miss[miss.length-1]}`;
+      return `<h2 class="sec-title fit1" data-max="34" data-min="18">Scorecard</h2><section class="panel entry">
+      ${holeNav(n,ps)}
+      <div class="taken miss" role="alert">
+        <div class="taken-ic" aria-hidden="true">⚠️</div>
+        <h2>Missing scores</h2>
+        <p>${miss.length===1?`Hole ${list} still needs scores.`:`Holes ${list} still need scores.`} Enter ${miss.length===1?"it":"them"} to finish your round.</p>
+        <div class="taken-actions">
+          <button class="btn primary big-ish" type="button" data-act="hole" data-n="${miss[0]}">Go to hole ${miss[0]}</button>
+          <button class="btn" type="button" data-act="missingok">Review hole ${n}</button>
+        </div>
+      </div>
+    </section>`; }
+    S.missing=null;
+  }
   // Another phone on this team saved this hole while we were on it: tell this phone and offer the next hole
   const hkey=t.id+":"+n;
   if(S.draft.startedEmpty&&allIn&&!(S.savedHere||{})[hkey]&&!(S.ackHole||{})[hkey]){
@@ -1700,6 +1719,7 @@ app.addEventListener("click",async e=>{
     if(f==="s") d.s = d.s==null ? (hole(S.draft.n)?.par||4) : Math.max(1,Math.min(15,d.s+dd));
     else d.p = d.p==null ? 2 : Math.max(0,Math.min(9,d.p+dd));
     if(d.p!=null&&d.s!=null&&d.p>d.s)d.p=d.s; return render();}
+  if(act==="missingok"){ S.missing=null; return render(); }
   if(act==="ackhole"){ const D=S.draft; if(D){ (S.ackHole=S.ackHole||{})[D.tid+":"+D.n]=true; } S.draft=null; return render(); }
   if(act==="savehole"){const D=S.draft;if(!D)return; unlockAudio(); (S.savedHere=S.savedHere||{})[D.tid+":"+D.n]=true;
     if(Object.values(D.v).some(d=>d.s==null||d.p==null)) return toast("Enter every golfer's score and putts first.");
@@ -1721,7 +1741,11 @@ app.addEventListener("click",async e=>{
     if(failed) return;
     S.saving=null;
     if(topShout) toast(topShout.t); else toast(`✓ Hole ${D.n} saved`);
-    if(D.n<18){S.hole=D.n+1;} S.draft=null; S.review=null; render();
+    { const tps=teamPlayers(D.tid), done=m=>m===D.n||(tps.length&&tps.every(p=>entry(p.id,m)));
+      let nxt=null; for(let m=D.n+1;m<=18;m++) if(!done(m)){ nxt=m; break; }
+      const missing=[]; for(let m=1;m<=18;m++) if(!done(m)) missing.push(m);
+      if(nxt) S.hole=nxt; else if(missing.length){ S.missing={tid:D.tid,from:D.n}; } }
+    S.draft=null; S.review=null; render();
     const en=document.querySelector(".entry"); if(en){const y=en.getBoundingClientRect().top+window.scrollY-70; window.scrollTo({top:Math.max(0,y),behavior:"smooth"});}
     return;}
   if(act==="clearhole"){const D=S.draft;if(!D)return;b.disabled=true;
