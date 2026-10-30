@@ -1356,13 +1356,6 @@ function keepPlaybackMode(){ if(!IS_IOS||!soundOn()||document.visibilityState!==
 ["touchend","click"].forEach(ev=>document.addEventListener(ev,keepPlaybackMode,{passive:true}));
 // Stop the silent track when the page is hidden so nothing shows on the lock screen; it restarts on the next tap.
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState!=="visible"&&silentEl){ try{ silentEl.pause(); }catch(e){} } });
-// iPhone only lets an <audio> element play on its own later if it was started once by a tap. Do that silently on the first tap.
-let heckleElPrimed=false;
-function primeHeckleEl(){ if(heckleElPrimed) return; heckleElPrimed=true;
-  try{ const src=heckleSrc||DEFAULT_HECKLE; heckleEl=new Audio(src); heckleEl.dataset.src=src; heckleEl.preload="auto"; heckleEl.muted=true;
-    const pr=heckleEl.play(); const done_=()=>{ try{ heckleEl.pause(); heckleEl.currentTime=0; heckleEl.muted=false; }catch(e){} };
-    if(pr&&pr.then) pr.then(done_).catch(()=>{ heckleElPrimed=false; heckleEl.muted=false; }); else done_(); }catch(e){ heckleElPrimed=false; } }
-["touchend","click"].forEach(ev=>document.addEventListener(ev,primeHeckleEl,{passive:true}));
 // iPhones pause ("interrupt") audio when the screen locks, the app goes to the background or a call comes in. Wake it back up.
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&actx&&actx.state!=="running"&&actx.state!=="closed") actx.resume().catch(()=>{}); });
 function sfxReady(){ if(!soundOn()) return null; unlockAudio(); return (actx&&actx.state==="running")?actx:null; }
