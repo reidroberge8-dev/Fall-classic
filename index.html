@@ -1304,6 +1304,13 @@ function unlockAudio(){ try{ if(navigator.audioSession&&navigator.audioSession.t
   try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C){ actx=new C(); if(heckleSrc&&!heckleBuf) setTimeout(()=>loadHeckle(heckleSrc),0); if(aceSrc&&!aceBuf) setTimeout(()=>loadAce(aceSrc),0); } }
   if(actx&&actx.state!=="running"&&actx.state!=="closed") actx.resume().catch(()=>{}); }catch(e){} }
 ["touchstart","touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
+// iPhone only lets an <audio> element play on its own later if it was started once by a tap. Do that silently on the first tap.
+let heckleElPrimed=false;
+function primeHeckleEl(){ if(heckleElPrimed) return; heckleElPrimed=true;
+  try{ const src=heckleSrc||DEFAULT_HECKLE; heckleEl=new Audio(src); heckleEl.dataset.src=src; heckleEl.preload="auto"; heckleEl.muted=true;
+    const pr=heckleEl.play(); const done_=()=>{ try{ heckleEl.pause(); heckleEl.currentTime=0; heckleEl.muted=false; }catch(e){} };
+    if(pr&&pr.then) pr.then(done_).catch(()=>{ heckleElPrimed=false; heckleEl.muted=false; }); else done_(); }catch(e){ heckleElPrimed=false; } }
+["touchend","click"].forEach(ev=>document.addEventListener(ev,primeHeckleEl,{passive:true}));
 // iPhones pause ("interrupt") audio when the screen locks, the app goes to the background or a call comes in. Wake it back up.
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&actx&&actx.state!=="running"&&actx.state!=="closed") actx.resume().catch(()=>{}); });
 function sfxReady(){ if(!soundOn()) return null; unlockAudio(); return (actx&&actx.state==="running")?actx:null; }
@@ -1427,12 +1434,13 @@ let heckleEl=null;
 function heckle(){
   if(heckleSrc&&heckleBuf&&actx){ try{ const src=actx.createBufferSource(), g=actx.createGain(); g.gain.value=1; src.buffer=heckleBuf; src.connect(g); g.connect(actx.destination); src.start(actx.currentTime+0.35); return; }catch(e){} }
   // clip not decoded yet: fall back to a plain audio element
-  try{ const src=heckleSrc||DEFAULT_HECKLE; if(!heckleEl||heckleEl.dataset.src!==src){ heckleEl=new Audio(src); heckleEl.dataset.src=src; }
+  try{ const src=heckleSrc||DEFAULT_HECKLE; if(!heckleEl){ heckleEl=new Audio(src); heckleEl.dataset.src=src; } else if(heckleEl.dataset.src!==src){ heckleEl.src=src; heckleEl.dataset.src=src; }
+    heckleEl.muted=false;
     heckleEl.currentTime=0; const pr=heckleEl.play(); if(pr&&pr.catch) pr.catch(()=>{}); }catch(e){} }
 function playSfx(kind){ if(!soundOn()||kind==="none") return; unlockAudio();
   // If the audio engine is still waking up (common on iPhone after the screen was off), wait briefly instead of skipping the sound.
   if(actx&&actx.state!=="running"&&actx.state!=="closed"){ let done=false; const go_=()=>{ if(!done&&actx.state==="running"){ done=true; playSfxNow(kind); } };
-    actx.resume().then(go_).catch(()=>{}); setTimeout(go_,400); setTimeout(go_,1200); if(kind==="boo"&&!done){ done=true; heckle(); } return; }
+    actx.resume().then(go_).catch(()=>{}); setTimeout(go_,400); setTimeout(go_,1200); return; }
   playSfxNow(kind); }
 function playSfxNow(kind){ const a=sfxReady(); if(!a){ if(kind==="boo") heckle(); return; } if(kind==="boo") heckle(); try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
   if(kind==="ace"&&aceSrc&&aceBuf&&playClip(aceBuf)) return;
@@ -1681,6 +1689,9 @@ app.addEventListener("click",async e=>{
     if(S.saving) return;
     const key=D.tid+":"+D.n; S.saving=key; render(); try{ navigator.vibrate&&navigator.vibrate(15); }catch(e){}
     const shouts=shoutouts(D);
+    // Play the sound now, while the phone still counts this as a tap. iPhones block audio that starts later.
+    const topShout=shouts.length?shouts.reduce((m,x)=>(SFX_RANK[x.snd]??0)>(SFX_RANK[m.snd]??0)?x:m):null;
+    if(topShout) playSfx(topShout.snd);
     const writes=Object.entries(D.v).filter(([pid])=>S.players.some(p=>p.id===pid&&p.teamId===D.tid))
       .map(([pid,d])=>db.doc("scores/"+pid).set({h:{[D.n]:{s:d.s,p:d.p}},by:myUid},{merge:true}));
     const all=Promise.all(writes);
@@ -1692,7 +1703,7 @@ app.addEventListener("click",async e=>{
     await Promise.race([all.catch(()=>{}), new Promise(r=>setTimeout(r,900))]);
     if(failed) return;
     S.saving=null;
-    if(shouts.length){ const top=shouts.reduce((m,x)=>(SFX_RANK[x.snd]??0)>(SFX_RANK[m.snd]??0)?x:m); playSfx(top.snd); toast(top.t); } else toast(`✓ Hole ${D.n} saved`);
+    if(topShout) toast(topShout.t); else toast(`✓ Hole ${D.n} saved`);
     if(D.n<18){S.hole=D.n+1;} S.draft=null; S.review=null; render();
     const en=document.querySelector(".entry"); if(en){const y=en.getBoundingClientRect().top+window.scrollY-70; window.scrollTo({top:Math.max(0,y),behavior:"smooth"});}
     return;}
