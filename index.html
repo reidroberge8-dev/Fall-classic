@@ -802,7 +802,6 @@ function vRulesModal(){
   <section class="panel">
     <h2>Team Competition</h2>
     <ol class="rules">${list.map(r=>`<li><span>${esc(r).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</span></li>`).join("")}</ol>
-    ${custom?"":`<p class="note">These are starter rules. ${isAdmin?"Edit them in Admin → Event &amp; rules.":"The tournament admin will post the final rules."}</p>`}
   </section>
   <section class="panel">
     <h2>3-Putt Poker</h2>
