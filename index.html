@@ -959,8 +959,23 @@ function vTeam(){
   const who_unused=`<section class="panel"><h2>Who's entering scores?</h2>
     <div class="who-row">${ps.map(p=>`<button type="button" class="who-chip" data-act="me" data-id="${esc(p.id)}" aria-pressed="${me===p.id}"><b>${esc(p.name)}</b><span class="num">HCP ${fmtH(p.handicap)}</span></button>`).join("")}</div>
     ${me?"":`<p class="note">Tap your name. Each golfer enters their own score and putts.</p>`}</section>`;
-  if(tot.thru===18&&S.review!==t.id) return head+vFinished(t,tot)+vTeamCard(t,ps);
+  if(tot.thru===18&&S.review!==t.id) return ls("fin:"+t.id)?head+vFinished(t,tot)+vTeamCard(t,ps):head+vConfirm(t,tot,ps);
   return head+vEntry(t,ps)+vTeamCard(t,ps);
+}
+function vConfirm(t,tot,ps){
+  return `<h2 class="sec-title fit1" data-max="34" data-min="18">Review scores</h2><section class="panel done-card confirm-card">
+    <div class="done-ic" aria-hidden="true">📝</div>
+    <div class="eyebrow">All 18 holes are in</div>
+    <p class="done-place">Check every golfer's score and putts below. If something's wrong, fix it before you finish.</p>
+    <div class="done-score num ${tot.toPar<0?"under":""}">${fmtPar(tot.toPar)}</div>
+    <div class="done-split num">Front <b>${fmtPar(tot.front-tot.frontPar)}</b> · Back <b>${fmtPar(tot.back-tot.backPar)}</b> · ${tot.score} net</div>
+    <button class="btn primary big-confirm" type="button" data-act="finishround">✓ Finish round</button>
+    <button class="btn" type="button" data-act="review">Edit a hole</button>
+  </section>
+  ${vTeamCard(t,ps)}
+  <section class="panel done-card"><p class="done-place">All good?</p>
+    <button class="btn primary big-confirm" type="button" data-act="finishround">✓ Finish round</button>
+    <button class="btn" type="button" data-act="review">Edit a hole</button></section>`;
 }
 function vFinished(t,tot){
   const others=S.teams.filter(x=>x.division===t.division&&x.id!==t.id).map(x=>teamTotals(x));
@@ -986,6 +1001,7 @@ function vEntry(t,ps){
   const v=S.draft.v; ps.forEach(p=>{if(!v[p.id])v[p.id]={s:null,p:null,had:false};});
   const ready=ps.every(p=>v[p.id].s!=null&&v[p.id].p!=null);
   const allIn=ps.every(p=>entry(p.id,n));
+  let lastOne=!allIn; if(lastOne) for(let m=1;m<=18;m++){ if(m!==n&&!ps.every(p=>entry(p.id,m))){ lastOne=false; break; } }
   // Saved the last hole but earlier holes are still missing: list them and offer the first one
   if(S.missing&&S.missing.tid===t.id&&S.missing.from===n){
     const miss=[]; for(let m=1;m<=18;m++) if(!ps.every(p=>entry(p.id,m))) miss.push(m);
@@ -1037,7 +1053,7 @@ function vEntry(t,ps){
       <div class="mini"><span class="lbl">Score</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="s" data-d="-1" aria-label="${esc(p.name)} score down">−</button><output class="num ${d.s==null?"blank":d.s<h.par?"under":d.s>h.par?"over":""}">${d.s??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="s" data-d="1" aria-label="${esc(p.name)} score up">+</button></div></div>
       <div class="mini"><span class="lbl">Putts</span><div class="sp sm"><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="-1" aria-label="${esc(p.name)} putts down">−</button><output class="num ${d.p==null?"blank":d.p<=1?"p1":d.p===2?"p2":"p3"}">${d.p??"–"}</output><button type="button" data-act="adj" data-id="${pid}" data-f="p" data-d="1" aria-label="${esc(p.name)} putts up">+</button></div></div>
     </div>`}).join("");
-  return `<h2 class="sec-title fit1" data-max="34" data-min="18">Scorecard</h2>${S.review===t.id?`<button class="back" type="button" data-act="reviewdone">← Back to round summary</button>`:""}<section class="panel entry">
+  return `<h2 class="sec-title fit1" data-max="34" data-min="18">Scorecard</h2>${S.review===t.id?`<button class="back" type="button" data-act="reviewdone">← ${ls("fin:"+t.id)?"Back to round summary":"Back to review & finish"}</button>`:""}<section class="panel entry">
     ${holeNav(n,ps)}
     <div class="hole-facts hn-facts num"><span><b>${h.par}</b><small>Par</small></span><span><b>${teeFor(t.division)?.yards?.[n-1]??"–"}</b><small>Yds</small></span><span><b>${h[hcpKey(t.division)]??"–"}</b><small>HCP</small></span></div>
     <div class="prows">${rows}</div>
@@ -1045,7 +1061,7 @@ function vEntry(t,ps){
     <div class="row-actions save-bar">
       ${allIn?`<button class="btn" type="button" data-act="clearhole">Clear hole</button>`:""}
       ${S.saving===t.id+":"+n?`<button class="btn primary saving" type="button" style="flex:1" disabled aria-live="polite"><span class="spin" aria-hidden="true"></span> Saving…</button>`
-       :`<button class="btn primary" type="button" data-act="savehole" style="flex:1" ${ready?"":"disabled"}>${ready?`${allIn?"Update":"Save"} scores${n<18?" & go to next hole":""}`:`Enter all scores and putts`}</button>`}
+       :`<button class="btn primary" type="button" data-act="savehole" style="flex:1" ${ready?"":"disabled"}>${ready?(lastOne?"Review scores & finish round":`${allIn?"Update":"Save"} scores${n<18?" & go to next hole":""}`):`Enter all scores and putts`}</button>`}
     </div>
   </section>`;
 }
@@ -1712,6 +1728,7 @@ app.addEventListener("click",async e=>{
   if(act==="hole"){S.hole=Number(b.dataset.n);S.draft=null;return render();}
   if(act==="review"){ S.review=S.teamId; S.draft=null; render(); const en=document.querySelector(".entry"); if(en) window.scrollTo({top:Math.max(0,en.getBoundingClientRect().top+window.scrollY-120)}); return; }
   if(act==="reviewdone"){ S.review=null; S.draft=null; return render(); }
+  if(act==="finishround"){ ls("fin:"+S.teamId,"1"); S.review=null; S.draft=null; render(); window.scrollTo({top:0,behavior:"smooth"}); toast("🏆 Round finished!"); return; }
   if(act==="holenext"){ const n=S.hole, ps=teamPlayers(S.teamId);
     if(ps.length&&!ps.every(p=>entry(p.id,n))) return openSkipWarn(n);
     S.hole=Number(b.dataset.n);S.draft=null;return render();}
