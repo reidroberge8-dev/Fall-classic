@@ -848,7 +848,7 @@ function vWelcome(){
       ${top?`<span class="k">${esc(top)}</span>`:""}
       <h1>${esc(big)}</h1>
       ${ev.date?`<span class="d">${esc(fmtDate(ev.date))}</span>`:""}
-      <span class="d">${fmtTime(ev.startTime||"10:00")} start</span>
+      <span class="d">${(()=>{const st=ev.startTime||"10:00";const[h,mi]=st.split(":").map(Number);const a=isNaN(h)?"":(()=>{const t=h*60+mi-30;return `${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`;})();return `${a?`Arrive ${fmtTime(a)} · `:""}First tee ${fmtTime(st)}`;})()}</span>
     </div>
     <div class="w-bottom">
       <button class="play" type="button" data-act="rules">Play now</button>
