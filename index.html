@@ -1304,6 +1304,23 @@ function unlockAudio(){ try{ if(navigator.audioSession&&navigator.audioSession.t
   try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C){ actx=new C(); if(heckleSrc&&!heckleBuf) setTimeout(()=>loadHeckle(heckleSrc),0); if(aceSrc&&!aceBuf) setTimeout(()=>loadAce(aceSrc),0); } }
   if(actx&&actx.state!=="running"&&actx.state!=="closed") actx.resume().catch(()=>{}); }catch(e){} }
 ["touchstart","touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
+/* Safari on iPhone mutes web-audio sounds when the side switch is on silent (Chrome doesn't).
+   Two fixes: ask for "playback" audio up front, and keep a silent <audio> track running while the page is open,
+   which puts Safari into media-playback mode so the sound effects play like Chrome's do. */
+try{ if(navigator.audioSession) navigator.audioSession.type="playback"; }catch(e){}
+const IS_IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+let silentEl=null;
+function silentWavUrl(){ const sr=8000,n=sr/2,b=new ArrayBuffer(44+n),v=new DataView(b),w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i));};
+  w(0,"RIFF");v.setUint32(4,36+n,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,"data");v.setUint32(40,n,true);
+  for(let i=0;i<n;i++)v.setUint8(44+i,128); return URL.createObjectURL(new Blob([b],{type:"audio/wav"})); }
+function keepPlaybackMode(){ if(!IS_IOS||!soundOn()||document.visibilityState!=="visible") return;
+  try{ if(!silentEl){ silentEl=document.createElement("audio"); silentEl.src=silentWavUrl(); silentEl.loop=true; silentEl.preload="auto";
+      silentEl.setAttribute("playsinline",""); silentEl.setAttribute("x-webkit-airplay","deny"); silentEl.controls=false; }
+    if(silentEl.paused){ const pr=silentEl.play(); if(pr&&pr.catch) pr.catch(()=>{}); } }catch(e){} }
+["touchend","click"].forEach(ev=>document.addEventListener(ev,keepPlaybackMode,{passive:true}));
+// Stop the silent track when the page is hidden so nothing shows on the lock screen; it restarts on the next tap.
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState!=="visible"&&silentEl){ try{ silentEl.pause(); }catch(e){} } });
 // iPhone only lets an <audio> element play on its own later if it was started once by a tap. Do that silently on the first tap.
 let heckleElPrimed=false;
 function primeHeckleEl(){ if(heckleElPrimed) return; heckleElPrimed=true;
@@ -1633,7 +1650,7 @@ document.getElementById("chatModal").addEventListener("click",async e=>{
   const a=b.dataset.act;
   if(a==="chatme"){ls("chatMe",b.dataset.id);S.chatPicking=false;S.chatJump=true;renderChat();setTimeout(()=>document.getElementById("chatInput")?.focus(),50);}
   if(a==="chatswitch"){S.chatPicking=true;renderChat();}
-  if(a==="sound"){ ls("chatSound",soundOn()?"off":"on"); syncSoundBtn(); if(soundOn()){unlockAudio(); setTimeout(ping,30); toast("Message sound on");} else toast("Message sound off"); }
+  if(a==="sound"){ ls("chatSound",soundOn()?"off":"on"); syncSoundBtn(); if(!soundOn()&&silentEl){ try{ silentEl.pause(); }catch(e){} } else keepPlaybackMode(); if(soundOn()){unlockAudio(); setTimeout(ping,30); toast("Message sound on");} else toast("Message sound off"); }
   if(a==="chatdel"){const id=b.dataset.id; if(S.armed!=="m"+id){S.armed="m"+id;return renderChat();} S.armed=null;
     await write(()=>db.doc("chat/"+id).delete(),"Message deleted");}
 });
