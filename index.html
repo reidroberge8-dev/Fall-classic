@@ -1357,6 +1357,13 @@ function keepPlaybackMode(){ if(!IS_IOS||!soundOn()||document.visibilityState!==
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState!=="visible"&&silentEl){ try{ silentEl.pause(); }catch(e){} } });
 // iPhones pause ("interrupt") audio when the screen locks, the app goes to the background or a call comes in. Wake it back up.
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&actx&&actx.state!=="running"&&actx.state!=="closed") actx.resume().catch(()=>{}); });
+/* After the 3-putt clip, the phone says who three-putted. iPhones only allow speech once a tap has started it, so prime it on the first tap. */
+let speechPrimed=false;
+function primeSpeech(){ if(speechPrimed||!window.speechSynthesis) return; try{ const u=new SpeechSynthesisUtterance(" "); u.volume=0; speechSynthesis.speak(u); speechPrimed=true; }catch(e){} }
+["touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,primeSpeech,{passive:true}));
+function sayNames(names){ names=[...new Set((names||[]).filter(Boolean))]; if(!names.length||!soundOn()||!window.speechSynthesis) return;
+  const txt=names.length===1?names[0]:names.slice(0,-1).join(", ")+" and "+names[names.length-1];
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(txt); u.rate=0.95; u.pitch=1; u.volume=1; u.lang="en-US"; speechSynthesis.speak(u); }catch(e){} }
 function sfxReady(){ if(!soundOn()) return null; unlockAudio(); return (actx&&actx.state==="running")?actx:null; }
 function noiseBuf(a,secs){ const b=a.createBuffer(1,Math.ceil(a.sampleRate*secs),a.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; return b; }
 function outdoor(a,dest,secs,wet){ const c=a.createConvolver(), n=Math.ceil(a.sampleRate*secs), ir=a.createBuffer(2,n,a.sampleRate);
@@ -1475,18 +1482,18 @@ async function loadAce(dataUrl){ aceSrc=dataUrl||null; aceBuf=null; if(!dataUrl)
   try{ unlockAudio(); if(!actx) return; const ab=await (await fetch(dataUrl)).arrayBuffer(); aceBuf=await actx.decodeAudioData(ab); }catch(e){ console.warn("ace clip",e); } }
 function playClip(buf){ try{ const src=actx.createBufferSource(); src.buffer=buf; src.connect(actx.destination); src.start(actx.currentTime+0.02); return true; }catch(e){ return false; } }
 let heckleEl=null;
-function heckle(){
-  if(heckleSrc&&heckleBuf&&actx){ try{ const src=actx.createBufferSource(), g=actx.createGain(); g.gain.value=1; src.buffer=heckleBuf; src.connect(g); g.connect(actx.destination); src.start(actx.currentTime+0.35); return; }catch(e){} }
+function heckle(names){
+  if(heckleSrc&&heckleBuf&&actx){ try{ const src=actx.createBufferSource(), g=actx.createGain(); g.gain.value=1; src.buffer=heckleBuf; src.connect(g); g.connect(actx.destination); src.onended=()=>sayNames(names); src.start(actx.currentTime+0.35); return; }catch(e){} }
   // clip not decoded yet: fall back to a plain audio element
   try{ const src=heckleSrc||DEFAULT_HECKLE; if(!heckleEl){ heckleEl=new Audio(src); heckleEl.dataset.src=src; } else if(heckleEl.dataset.src!==src){ heckleEl.src=src; heckleEl.dataset.src=src; }
-    heckleEl.muted=false;
+    heckleEl.muted=false; heckleEl.onended=()=>sayNames(names);
     heckleEl.currentTime=0; const pr=heckleEl.play(); if(pr&&pr.catch) pr.catch(()=>{}); }catch(e){} }
-function playSfx(kind){ if(!soundOn()||kind==="none") return; unlockAudio();
+function playSfx(kind,names){ if(!soundOn()||kind==="none") return; unlockAudio();
   // If the audio engine is still waking up (common on iPhone after the screen was off), wait briefly instead of skipping the sound.
-  if(actx&&actx.state!=="running"&&actx.state!=="closed"){ let done=false; const go_=()=>{ if(!done&&actx.state==="running"){ done=true; playSfxNow(kind); } };
+  if(actx&&actx.state!=="running"&&actx.state!=="closed"){ let done=false; const go_=()=>{ if(!done&&actx.state==="running"){ done=true; playSfxNow(kind,names); } };
     actx.resume().then(go_).catch(()=>{}); setTimeout(go_,400); setTimeout(go_,1200); return; }
-  playSfxNow(kind); }
-function playSfxNow(kind){ const a=sfxReady(); if(!a){ if(kind==="boo") heckle(); return; } if(kind==="boo") heckle(); try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
+  playSfxNow(kind,names); }
+function playSfxNow(kind,names){ const a=sfxReady(); if(!a){ if(kind==="boo") heckle(names); return; } if(kind==="boo") heckle(names); try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
   if(kind==="ace"&&aceSrc&&aceBuf&&playClip(aceBuf)) return;
   try{ (SFX[kind]||SFX.ping)(a,a.currentTime+0.02); }catch(e){} }
 function ping(){ playSfx("ping"); }
@@ -1540,10 +1547,10 @@ function renderChat(){
 function openChat(){S.chatOpen=true;S.chatUnread=false;S.chatJump=true;markSeen();renderChat();document.documentElement.style.overflow="hidden";}
 function closeChat(){S.chatOpen=false;S.chatPicking=false;renderChat();if(!S.boardOpen&&!S.rulesOpen)document.documentElement.style.overflow="";}
 function markSeen(){const last=(S.chat||[]).reduce((m,x)=>x.at>m?x.at:m,"");if(last)ls("chatSeen",last);}
-async function postChat(t,kind,snd){
+async function postChat(t,kind,snd,who){
   const me=chatMe(); if(!t) return;
   const at=new Date().toISOString();
-  return db.collection("chat").add(kind==="auto"?{t,kind:"auto",snd:snd||"ping",at,uid:myUid}:{t,pid:me?.id||null,uid:myUid,at,kind:"msg"});
+  return db.collection("chat").add(kind==="auto"?{t,kind:"auto",snd:snd||"ping",at,uid:myUid,...(who?{who}:{})}:{t,pid:me?.id||null,uid:myUid,at,kind:"msg"});
 }
 // Team score over a range of holes, counting this phone's unsaved draft for hole D.n. null if any hole is incomplete.
 function draftRange(t,D,from,to){
@@ -1576,7 +1583,7 @@ function shoutouts(D){
     else if(diff<=-2) out.push({t:`🦅 ${p.name} eagled #${D.n}!`,snd:"eagle"});
     else if(diff===-1) out.push({t:`🐦 ${p.name} birdied #${D.n}`,snd:"birdie"});
     if(Number(d.p)===0&&(!prev||Number(prev.p)!==0)) out.push({t:`🪄 ${p.name} chipped in on #${D.n}! +2 cards`,snd:"birdie"});
-    if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. +$1 to the pot`,snd:p.division==="ladies"?"none":"boo"}); // no 3-putt sound for the ladies
+    if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. +$1 to the pot`,snd:p.division==="ladies"?"none":"boo",who:p.name}); // no 3-putt sound for the ladies
   }
   const turn=turnShout(D); if(turn) out.push(...turn);
   return out;
@@ -1708,7 +1715,7 @@ app.addEventListener("click",async e=>{
   if(act==="home") return go("choose");
   if(act==="welcome") return go("welcome");
   if(act==="division") return go("division");
-  if(act==="testheckle"){ unlockAudio(); const was=ls("chatSound"); ls("chatSound","on"); playSfx("boo"); if(was) ls("chatSound",was); return; }
+  if(act==="testheckle"){ unlockAudio(); const was=ls("chatSound"); ls("chatSound","on"); playSfx("boo",[chatMe()?.name||"Test golfer"]); if(was) ls("chatSound",was); return; }
   if(act==="testace"){ unlockAudio(); const was=ls("chatSound"); ls("chatSound","on"); playSfx("ace"); if(was) ls("chatSound",was); return; }
   if(act==="clearace"){ await write(()=>db.doc("config/ace").delete(),"Back to the crowd cheer"); return; }
   if(act==="clearheckle"){ await write(()=>db.doc("config/heckle").delete(),"Back to the built-in clip"); return; }
@@ -1737,12 +1744,12 @@ app.addEventListener("click",async e=>{
     const shouts=shoutouts(D);
     // Play the sound now, while the phone still counts this as a tap. iPhones block audio that starts later.
     const topShout=shouts.length?shouts.reduce((m,x)=>(SFX_RANK[x.snd]??0)>(SFX_RANK[m.snd]??0)?x:m):null;
-    if(topShout) playSfx(topShout.snd);
+    if(topShout) playSfx(topShout.snd,shouts.filter(x=>x.snd==="boo").map(x=>x.who));
     const writes=Object.entries(D.v).filter(([pid])=>S.players.some(p=>p.id===pid&&p.teamId===D.tid))
       .map(([pid,d])=>db.doc("scores/"+pid).set({h:{[D.n]:{s:d.s,p:d.p}},by:myUid},{merge:true}));
     const all=Promise.all(writes);
     let failed=false;
-    all.then(()=>{ for(const x of shouts) postChat(x.t,"auto",x.snd).catch(()=>{}); })
+    all.then(()=>{ for(const x of shouts) postChat(x.t,"auto",x.snd,x.who).catch(()=>{}); })
        .catch(err=>{ failed=true; if(S.saving===key) S.saving=null; render();
          toast(err?.code==="permission-denied"?`Hole ${D.n} didn't save. Reload the page and enter it again.`:`Hole ${D.n} didn't save. Check your connection, go back to hole ${D.n} and save again.`); });
     // Move on as soon as the scores are saved, or after a moment on a slow connection (the save keeps going in the background).
@@ -1930,7 +1937,9 @@ render();
     S.chat=s.docs.map(d=>({id:d.id,...d.data()}));
     const seen=ls("chatSeen")||"", me=ls("chatMe");
     const fresh=S.chat.filter(x=>!prevIds.has(x.id)&&!(x.kind!=="auto"&&x.pid===me)&&x.uid!==myUid);
-    if(!chatFirst&&fresh.length){ const k=fresh.map(x=>x.kind==="auto"?(x.snd||"ping"):"ping").reduce((m,k)=>(SFX_RANK[k]??1)>(SFX_RANK[m]??1)?k:m,"none"); playSfx(k); }
+    if(!chatFirst&&fresh.length){ const k=fresh.map(x=>x.kind==="auto"?(x.snd||"ping"):"ping").reduce((m,k)=>(SFX_RANK[k]??1)>(SFX_RANK[m]??1)?k:m,"none");
+      const who=fresh.filter(x=>x.kind==="auto"&&x.snd==="boo").map(x=>x.who||((x.t||"").match(/^😬 (.+?) \d+-putted/)||[])[1]);
+      playSfx(k,who); }
     if(S.chatOpen){markSeen();}
     else{
       S.chatUnread=S.chat.some(x=>(x.at||"")>seen&&!(x.kind!=="auto"&&x.pid===me));
