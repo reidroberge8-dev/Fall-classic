@@ -1513,12 +1513,27 @@ function heckleClip(){
   try{ const src=heckleSrc||DEFAULT_HECKLE; if(!heckleEl){ heckleEl=new Audio(src); heckleEl.dataset.src=src; } else if(heckleEl.dataset.src!==src){ heckleEl.src=src; heckleEl.dataset.src=src; }
     heckleEl.dataset.live="1"; heckleEl.muted=false;
     heckleEl.currentTime=0; const pr=heckleEl.play(); if(pr&&pr.catch) pr.catch(()=>{}); }catch(e){} }
-function playSfx(kind,names){ if(!soundOn()||kind==="none") return; unlockAudio();
+/* Good-news call-outs: after the chirp/screech/cheer, the phone says who did it and on which hole,
+   e.g. "Reid birdied hole 7". The words come from the chat message text, so every phone can say them. */
+function announceText(t){ t=t||""; let m;
+  if((m=t.match(/HOLE IN ONE! (.+?) aced #(\d+)/))) return `${m[1]} made a hole in one on hole ${m[2]}`;
+  if((m=t.match(/^\S+ (.+?) (eagled|birdied) #(\d+)/))) return `${m[1]} ${m[2]} hole ${m[3]}`;
+  if((m=t.match(/^\S+ (.+?) chipped in on #(\d+)/))) return `${m[1]} chipped in on hole ${m[2]}`;
+  return ""; }
+const GOOD_SFX=["ace","eagle","birdie"];
+function announceFor(msgs){ return [...new Set((msgs||[]).filter(x=>GOOD_SFX.includes(x.snd)).map(x=>announceText(x.t)).filter(Boolean))].join(". "); }
+function speakLine(txt){ if(!txt||!soundOn()||!window.speechSynthesis) return;
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(txt); u.rate=0.95; u.pitch=1; u.volume=1; u.lang="en-US"; speechSynthesis.speak(u); }catch(e){} }
+// How long each sound runs before the voice starts (milliseconds).
+function sfxLength(kind){ if(kind==="ace") return (aceSrc&&aceBuf)?Math.round(aceBuf.duration*1000)+200:3000; return kind==="eagle"?1700:1300; }
+function playSfx(kind,names,say){ if(!soundOn()||kind==="none") return; unlockAudio();
   // If the audio engine is still waking up (common on iPhone after the screen was off), wait briefly instead of skipping the sound.
-  if(actx&&actx.state!=="running"&&actx.state!=="closed"){ let done=false; const go_=()=>{ if(!done&&actx.state==="running"){ done=true; playSfxNow(kind,names); } };
+  if(actx&&actx.state!=="running"&&actx.state!=="closed"){ let done=false; const go_=()=>{ if(!done&&actx.state==="running"){ done=true; playSfxNow(kind,names,say); } };
     actx.resume().then(go_).catch(()=>{}); setTimeout(go_,400); setTimeout(go_,1200); return; }
-  playSfxNow(kind,names); }
-function playSfxNow(kind,names){ const a=sfxReady(); if(!a){ if(kind==="boo") heckle(names); return; } if(kind==="boo") heckle(names); try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
+  playSfxNow(kind,names,say); }
+function playSfxNow(kind,names,say){ const a=sfxReady(); const announce=GOOD_SFX.includes(kind)?say:"";
+  if(!a){ if(kind==="boo") heckle(names); speakLine(announce); return; }
+  if(announce) setTimeout(()=>speakLine(announce),sfxLength(kind)); if(kind==="boo") heckle(names); try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
   if(kind==="ace"&&aceSrc&&aceBuf&&playClip(aceBuf)) return;
   try{ (SFX[kind]||SFX.ping)(a,a.currentTime+0.02); }catch(e){} }
 function ping(){ playSfx("ping"); }
@@ -1769,7 +1784,7 @@ app.addEventListener("click",async e=>{
     const shouts=shoutouts(D);
     // Play the sound now, while the phone still counts this as a tap. iPhones block audio that starts later.
     const topShout=shouts.length?shouts.reduce((m,x)=>(SFX_RANK[x.snd]??0)>(SFX_RANK[m.snd]??0)?x:m):null;
-    if(topShout) playSfx(topShout.snd,shouts.filter(x=>x.snd==="boo").map(x=>x.who));
+    if(topShout) playSfx(topShout.snd,shouts.filter(x=>x.snd==="boo").map(x=>x.who),announceFor(shouts));
     const writes=Object.entries(D.v).filter(([pid])=>S.players.some(p=>p.id===pid&&p.teamId===D.tid))
       .map(([pid,d])=>db.doc("scores/"+pid).set({h:{[D.n]:{s:d.s,p:d.p}},by:myUid},{merge:true}));
     const all=Promise.all(writes);
@@ -1964,7 +1979,7 @@ render();
     const fresh=S.chat.filter(x=>!prevIds.has(x.id)&&!(x.kind!=="auto"&&x.pid===me)&&x.uid!==myUid);
     if(!chatFirst&&fresh.length){ const k=fresh.map(x=>x.kind==="auto"?(x.snd||"ping"):"ping").reduce((m,k)=>(SFX_RANK[k]??1)>(SFX_RANK[m]??1)?k:m,"none");
       const who=fresh.filter(x=>x.kind==="auto"&&x.snd==="boo").map(x=>x.who||((x.t||"").match(/^😬 (.+?) \d+-putted/)||[])[1]);
-      playSfx(k,who); }
+      playSfx(k,who,announceFor(fresh.filter(x=>x.kind==="auto"))); }
     if(S.chatOpen){markSeen();}
     else{
       S.chatUnread=S.chat.some(x=>(x.at||"")>seen&&!(x.kind!=="auto"&&x.pid===me));
