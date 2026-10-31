@@ -1102,7 +1102,10 @@ function vBoard(){
       <span class="r"><b>${r.x.thru?fmtPar(r.x.toPar):"–"}</b></span><span class="r">${r.x.thru?(r.x.thru===18?"F":r.x.thru):(r.t.teeTime?fmtTime(r.t.teeTime):"–")}</span></summary>
       <div class="lb-body">${open?(ps.length?vTeamCard(r.t,ps,true):`<p class="muted">No golfers on this team yet.</p>`):""}</div>
     </details>`}).join("");
-  const pc=p=>{let zero=0,one=0,three=0,holes=0,tot=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(!e)continue;holes++;const v=Number(e.p);if(!isNaN(v))tot+=v;if(v===0)zero++;else if(v===1)one++;else if(v>=3)three++;}return {zero,one,three,holes,tot,cards:2+one+2*zero};};
+  // Ladies: every player on the 1st place team gets +2 cards (the current leaders, tied teams included)
+  const played=ts.filter(r=>r.x.thru>0), bestPar=played.length?Math.min(...played.map(r=>r.x.toPar)):null;
+  const winIds=new Set(d==="ladies"?played.filter(r=>r.x.toPar===bestPar).map(r=>r.t.id):[]);
+  const pc=p=>{let zero=0,one=0,three=0,holes=0,tot=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(!e)continue;holes++;const v=Number(e.p);if(!isNaN(v))tot+=v;if(v===0)zero++;else if(v===1)one++;else if(v>=3)three++;}const bonus=winIds.has(p.teamId)?2:0;return {zero,one,three,holes,tot,bonus,cards:2+one+2*zero+bonus};};
   const pl=S.players.filter(p=>p.division===d).map(p=>({p,c:pc(p)})).filter(r=>r.c.holes)
     .sort((a,b)=>b.c.cards-a.c.cards||(b.c.zero+b.c.one)-(a.c.zero+a.c.one)||a.c.three-b.c.three||byName(a.p,b.p));
   const maxOne=pl.reduce((m,r)=>Math.max(m,r.c.zero+r.c.one),0);
@@ -1134,7 +1137,7 @@ function vBoard(){
     <tbody>${ln.map(r=>`<tr><td class="c">${r.pos}</td><td>${esc(r.p.name)}${r.pos===1?` <span class="star" aria-label="low net leader">★</span>`:""}</td><td class="c"><b>${fmtPar(r.c.toPar)}</b></td><td class="c">${r.c.gross}</td><td class="c">${r.c.netT}</td><td class="c">${r.c.holes===18?"F":r.c.holes}</td></tr>`).join("")}</tbody></table></div><p class="note">Lowest net score on the day wins the $${d==="ladies"?15:20} individual prize. Net is shown to par over the holes each golfer has played.</p></section>`:""}
   ${pl.length?`<section class="panel"><h2>Putting</h2><div class="scroll"><table class="card-table num putt-table">
     <thead><tr><th>Golfer</th><th class="c">Cards</th><th class="c">0/1 putts</th><th class="c">Owed</th><th class="c">Putts</th></tr></thead>
-    <tbody>${pl.map(r=>`<tr><td>${esc(r.p.name)}</td><td class="c"><b>${r.c.cards}</b></td><td class="c p1"><b>${r.c.zero+r.c.one}</b>${maxOne>0&&r.c.zero+r.c.one===maxOne?` <span class="star" aria-label="most 0 or 1-putts">★</span>`:""}</td><td class="c ${r.c.three?"p3":"muted"}"><b>$${r.c.three}</b></td><td class="c"><b>${r.c.tot}</b><span class="thru-sm">thru ${r.c.holes}</span></td></tr>`).join("")}</tbody></table></div><p class="note">Cards = 2 to start, +1 per 1-putt, +2 per 0-putt hole.</p></section>`:""}`;
+    <tbody>${pl.map(r=>`<tr><td>${esc(r.p.name)}</td><td class="c"><b>${r.c.cards}</b>${r.c.bonus?`<span class="thru-sm">incl. +2 🏆</span>`:""}</td><td class="c p1"><b>${r.c.zero+r.c.one}</b>${maxOne>0&&r.c.zero+r.c.one===maxOne?` <span class="star" aria-label="most 0 or 1-putts">★</span>`:""}</td><td class="c ${r.c.three?"p3":"muted"}"><b>$${r.c.three}</b></td><td class="c"><b>${r.c.tot}</b><span class="thru-sm">thru ${r.c.holes}</span></td></tr>`).join("")}</tbody></table></div><p class="note">Cards = 2 to start, +1 per 1-putt, +2 per 0-putt hole.${d==="ladies"?" The 1st place team gets +2 each (🏆), going to whoever is leading right now.":""}</p></section>`:""}`;
 }
 
 /* ---------- admin ---------- */
