@@ -1372,9 +1372,12 @@ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==
 let speechPrimed=false;
 function primeSpeech(){ if(speechPrimed||!window.speechSynthesis) return; try{ const u=new SpeechSynthesisUtterance(" "); u.volume=0; speechSynthesis.speak(u); speechPrimed=true; }catch(e){} }
 ["touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,primeSpeech,{passive:true}));
-function sayNames(names){ names=[...new Set((names||[]).filter(Boolean))]; if(!names.length||!soundOn()||!window.speechSynthesis) return;
+// Say the names, then call next() once (when speech ends, fails, or after a safety timeout).
+function sayNames(names,next){ let fired=false; const go=()=>{ if(!fired){ fired=true; next&&next(); } };
+  names=[...new Set((names||[]).filter(Boolean))]; if(!names.length||!soundOn()||!window.speechSynthesis) return go();
   const txt=names.length===1?names[0]:names.slice(0,-1).join(", ")+" and "+names[names.length-1];
-  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(txt); u.rate=0.95; u.pitch=1; u.volume=1; u.lang="en-US"; speechSynthesis.speak(u); }catch(e){} }
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(txt); u.rate=0.95; u.pitch=1; u.volume=1; u.lang="en-US";
+    u.onend=go; u.onerror=go; speechSynthesis.speak(u); setTimeout(go,1000+txt.length*90); }catch(e){ go(); } }
 function sfxReady(){ if(!soundOn()) return null; unlockAudio(); return (actx&&actx.state==="running")?actx:null; }
 function noiseBuf(a,secs){ const b=a.createBuffer(1,Math.ceil(a.sampleRate*secs),a.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; return b; }
 function outdoor(a,dest,secs,wet){ const c=a.createConvolver(), n=Math.ceil(a.sampleRate*secs), ir=a.createBuffer(2,n,a.sampleRate);
@@ -1493,11 +1496,17 @@ async function loadAce(dataUrl){ aceSrc=dataUrl||null; aceBuf=null; if(!dataUrl)
   try{ unlockAudio(); if(!actx) return; const ab=await (await fetch(dataUrl)).arrayBuffer(); aceBuf=await actx.decodeAudioData(ab); }catch(e){ console.warn("ace clip",e); } }
 function playClip(buf){ try{ const src=actx.createBufferSource(); src.buffer=buf; src.connect(actx.destination); src.start(actx.currentTime+0.02); return true; }catch(e){ return false; } }
 let heckleEl=null;
+// The 3-putt call: say who three-putted first, then play the heckle clip.
 function heckle(names){
-  if(heckleSrc&&heckleBuf&&actx){ try{ const src=actx.createBufferSource(), g=actx.createGain(); g.gain.value=1; src.buffer=heckleBuf; src.connect(g); g.connect(actx.destination); src.onended=()=>sayNames(names); src.start(actx.currentTime+0.35); return; }catch(e){} }
+  // The fallback audio element must be started during the tap on iPhone, so warm it up now and play it after the name.
+  if(!(heckleSrc&&heckleBuf&&actx)){ try{ const src=heckleSrc||DEFAULT_HECKLE; if(!heckleEl){ heckleEl=new Audio(src); heckleEl.dataset.src=src; } else if(heckleEl.dataset.src!==src){ heckleEl.src=src; heckleEl.dataset.src=src; }
+    heckleEl.dataset.live=""; heckleEl.muted=true; const pr=heckleEl.play(); if(pr&&pr.then) pr.then(()=>{ if(!heckleEl.dataset.live) try{ heckleEl.pause(); }catch(e){} }).catch(()=>{}); }catch(e){} }
+  sayNames(names,()=>heckleClip()); }
+function heckleClip(){
+  if(heckleSrc&&heckleBuf&&actx){ try{ const src=actx.createBufferSource(), g=actx.createGain(); g.gain.value=1; src.buffer=heckleBuf; src.connect(g); g.connect(actx.destination); src.start(actx.currentTime+0.1); return; }catch(e){} }
   // clip not decoded yet: fall back to a plain audio element
   try{ const src=heckleSrc||DEFAULT_HECKLE; if(!heckleEl){ heckleEl=new Audio(src); heckleEl.dataset.src=src; } else if(heckleEl.dataset.src!==src){ heckleEl.src=src; heckleEl.dataset.src=src; }
-    heckleEl.muted=false; heckleEl.onended=()=>sayNames(names);
+    heckleEl.dataset.live="1"; heckleEl.muted=false;
     heckleEl.currentTime=0; const pr=heckleEl.play(); if(pr&&pr.catch) pr.catch(()=>{}); }catch(e){} }
 function playSfx(kind,names){ if(!soundOn()||kind==="none") return; unlockAudio();
   // If the audio engine is still waking up (common on iPhone after the screen was off), wait briefly instead of skipping the sound.
