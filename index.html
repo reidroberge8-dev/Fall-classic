@@ -1603,7 +1603,7 @@ function shoutouts(D){
     else if(diff<=-2) out.push({t:`🦅 ${p.name} eagled #${D.n}!`,snd:"eagle"});
     else if(diff===-1) out.push({t:`🐦 ${p.name} birdied #${D.n}`,snd:"birdie"});
     if(Number(d.p)===0&&(!prev||Number(prev.p)!==0)) out.push({t:`🪄 ${p.name} chipped in on #${D.n}! +2 cards`,snd:"birdie"});
-    if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. +$1 to the pot`,snd:p.division==="ladies"?"none":"boo",who:p.name}); // no 3-putt sound for the ladies
+    if(d.p>=3) out.push({t:`😬 ${p.name} ${d.p}-putted #${D.n}. +$1 to the pot`,snd:"boo",who:p.name});
   }
   const turn=turnShout(D); if(turn) out.push(...turn);
   return out;
