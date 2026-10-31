@@ -677,7 +677,7 @@ table.grid .netsup{font-size:.6em;vertical-align:super;line-height:0;margin-left
 <main id="main"><div class="wrap" id="app">
   <div class="empty"><b>Loading the tournament…</b></div>
 </div>
-<footer class="foot" id="foot"><button type="button" id="footAdmin">Tournament admin</button><button type="button" id="footSignIn">Admin sign-in</button><button type="button" id="footSignOut">Sign out</button></footer></main>
+<footer class="foot" id="foot"><button type="button" id="footHistory" hidden>Past years</button><button type="button" id="footAdmin">Tournament admin</button><button type="button" id="footSignIn">Admin sign-in</button><button type="button" id="footSignOut">Sign out</button></footer></main>
 <div class="modal pick-modal" id="pickModal" hidden>
   <div class="modal-back" data-pact="cancel"></div>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="pickTitle" id="pickBody"></div>
@@ -852,6 +852,7 @@ function vWelcome(){
     </div>
     <div class="w-bottom">
       <button class="play" type="button" data-act="rules">Play now</button>
+      ${(S.history||[]).length?`<button class="w-admin" type="button" data-act="history">Past years</button>`:""}
       ${isAdmin?`<button class="w-admin" type="button" data-act="admin">Tournament admin</button>`:`<button class="w-admin w-signin" type="button" data-act="signin">Admin sign-in</button>`}
     </div>
   </div>`;
@@ -1127,7 +1128,7 @@ function vBoard(){
       <div class="pot-sub num">$${POKER_START} starting pot + $${threes} from ${threes} three‑putt${threes===1?"":"s"}</div>
     </div>
   </section>
-  ${ts.length?`<section class="panel"><h2 class="fit1" data-max="28" data-min="15">Live Standings – Team Competition</h2>
+  ${ts.length?`<section class="panel"><h2 class="fit1" data-max="28" data-min="15">${S.histMode?"Final Standings":"Live Standings"} – Team Competition</h2>
     <div class="lb-grid lb-head"><span>#</span><span>Team</span><span class="r">Net score</span><span class="r">Thru</span></div>
     <div class="lb-list">${rows}</div>
     <p class="note">Net, to par. A hole counts once every golfer on the team has entered a score.</p></section>`
@@ -1137,14 +1138,54 @@ function vBoard(){
     <tbody>${ln.map(r=>`<tr><td class="c">${r.pos}</td><td>${esc(r.p.name)}${r.pos===1?` <span class="star" aria-label="low net leader">★</span>`:""}</td><td class="c"><b>${fmtPar(r.c.toPar)}</b></td><td class="c">${r.c.gross}</td><td class="c">${r.c.netT}</td><td class="c">${r.c.holes===18?"F":r.c.holes}</td></tr>`).join("")}</tbody></table></div><p class="note">Lowest net score on the day wins the $${d==="ladies"?15:20} individual prize. Net is shown to par over the holes each golfer has played.</p></section>`:""}
   ${pl.length?`<section class="panel"><h2>Putting</h2><div class="scroll"><table class="card-table num putt-table">
     <thead><tr><th>Golfer</th><th class="c">Cards</th><th class="c">0/1 putts</th><th class="c">Owed</th><th class="c">Putts</th></tr></thead>
-    <tbody>${pl.map(r=>`<tr><td>${esc(r.p.name)}</td><td class="c"><b>${r.c.cards}</b>${r.c.bonus?`<span class="thru-sm">incl. +2 🏆</span>`:""}</td><td class="c p1"><b>${r.c.zero+r.c.one}</b>${maxOne>0&&r.c.zero+r.c.one===maxOne?` <span class="star" aria-label="most 0 or 1-putts">★</span>`:""}</td><td class="c ${r.c.three?"p3":"muted"}"><b>$${r.c.three}</b></td><td class="c"><b>${r.c.tot}</b><span class="thru-sm">thru ${r.c.holes}</span></td></tr>`).join("")}</tbody></table></div><p class="note">Cards = 2 to start, +1 per 1-putt, +2 per 0-putt hole.${d==="ladies"?" The 1st place team gets +2 each (🏆), going to whoever is leading right now.":""}</p></section>`:""}`;
+    <tbody>${pl.map(r=>`<tr><td>${esc(r.p.name)}</td><td class="c"><b>${r.c.cards}</b>${r.c.bonus?`<span class="thru-sm">incl. +2 🏆</span>`:""}</td><td class="c p1"><b>${r.c.zero+r.c.one}</b>${maxOne>0&&r.c.zero+r.c.one===maxOne?` <span class="star" aria-label="most 0 or 1-putts">★</span>`:""}</td><td class="c ${r.c.three?"p3":"muted"}"><b>$${r.c.three}</b></td><td class="c"><b>${r.c.tot}</b><span class="thru-sm">thru ${r.c.holes}</span></td></tr>`).join("")}</tbody></table></div><p class="note">Cards = 2 to start, +1 per 1-putt, +2 per 0-putt hole.${d==="ladies"?` The 1st place team gets +2 each (🏆)${S.histMode?"":", going to whoever is leading right now"}.`:""}</p></section>`:""}`;
+}
+
+/* ---------- past years ---------- */
+// Each year is one saved snapshot in Firestore at history/<year>: the event, course, golfers, teams and every score.
+function historyYear(){ const d=(S.event&&S.event.date)||""; return /^\d{4}/.test(d)?d.slice(0,4):String(new Date().getFullYear()); }
+function historySnapshot(){
+  const year=historyYear();
+  return { year:Number(year), name:eventName(), date:(S.event&&S.event.date)||"", savedAt:new Date().toISOString(),
+    event:{...(S.event||{})}, course:S.course||null,
+    players:S.players.map(p=>({...p})), teams:S.teams.map(t=>({...t})), scores:JSON.parse(JSON.stringify(S.scores||{})) };
+}
+async function saveHistory(){ const snap=historySnapshot(); await db.doc("history/"+snap.year).set(snap); return snap.year; }
+// Show a saved year with the same leaderboard as tournament day, by swapping that year's data in while it draws.
+function withYear(y,fn){
+  const keep={players:S.players,teams:S.teams,scores:S.scores,course:S.course,event:S.event,teamId:S.teamId};
+  S.players=y.players||[]; S.teams=y.teams||[]; S.scores=y.scores||{}; S.course=y.course||S.course; S.event=y.event||S.event; S.teamId=null; S.histMode=true;
+  try{ return fn(); } finally { Object.assign(S,keep); S.histMode=false; }
+}
+function vHistory(){
+  const list=S.history||[];
+  const back=`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><button class="back" data-act="welcome" type="button">← Home</button></div>`;
+  if(!list.length) return `${back}<div class="empty"><b>No past years saved yet</b><span>Results show up here once the tournament admin saves a year.</span></div>`;
+  const y=list.find(x=>x.id===S.histYear)||list[0];
+  return `${back}
+  <div><div class="eyebrow">Past years</div><h1>${esc(y.name||"Fall Classic")} ${esc(y.id)}</h1>${y.date?`<p class="muted" style="margin:4px 0 0">Final results · ${esc(fmtDate(y.date))}</p>`:""}</div>
+  ${list.length>1?`<div class="seg" role="group" aria-label="Year">${list.map(x=>`<button type="button" data-act="hyear" data-year="${esc(x.id)}" aria-pressed="${x.id===y.id}">${esc(x.id)}</button>`).join("")}</div>`:""}
+  ${withYear(y,vBoard)}`;
+}
+function aHistory(){
+  const year=historyYear(), list=S.history||[], saved=list.find(x=>x.id===year), busy=S.histSaving;
+  const nScores=Object.keys(S.scores).length;
+  return `<section class="panel">
+    <h2>Save to Past years</h2>
+    <p>Saves ${esc(year)}'s teams, golfers, handicaps, course and every score. Anyone can look back at it from <b>Past years</b> on the home screen, even after you reset for next year.</p>
+    ${saved?`<p class="note">${esc(year)} was last saved ${esc(new Date(saved.savedAt).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))}. Saving again replaces it with the scores as they are now.</p>`:""}
+    <div class="row-actions"><button class="btn" type="button" data-act="hsave" ${busy||!nScores?"disabled":""}>${busy?"Saving…":saved?`Update ${esc(year)}`:`Save ${esc(year)}`}</button></div>
+    ${!nScores?`<p class="note">No scores entered yet.</p>`:""}
+    ${list.length?`<p style="margin-top:14px"><b>Saved years</b></p><div class="reset-opts">${list.map(x=>`<div class="ropt" style="align-items:center;justify-content:space-between"><span><b>${esc(x.id)}</b><small>${(x.teams||[]).length} teams · ${Object.keys(x.scores||{}).length} golfers with scores</small></span>
+      <span style="display:flex;gap:8px"><button class="btn" type="button" data-act="hview" data-year="${esc(x.id)}">View</button><button class="btn danger ${S.armed==="hdel"+x.id?"armed":""}" type="button" data-act="hdel" data-year="${esc(x.id)}">${S.armed==="hdel"+x.id?"Delete?":"Delete"}</button></span></div>`).join("")}</div>`:""}
+  </section>`;
 }
 
 /* ---------- admin ---------- */
 function vAdmin(){
   if(!isAdmin) {S.view="choose";return vChoose();}
   const tabs=[["event","Event & rules"],["course","Course"],["players","Players"],["teams","Teams"],["reset","Reset"]];
-  const body=S.adminTab==="event"?aEvent():S.adminTab==="course"?aCourse():S.adminTab==="players"?aPlayers():S.adminTab==="reset"?aReset()+aImport():aTeams();
+  const body=S.adminTab==="event"?aEvent():S.adminTab==="course"?aCourse():S.adminTab==="players"?aPlayers():S.adminTab==="reset"?aHistory()+aReset()+aImport():aTeams();
   return `<div><div class="eyebrow">Tournament admin</div><h1>${esc(eventName())}</h1></div>
   <div class="tabs" role="group">${tabs.map(([k,l])=>`<button type="button" data-act="atab" data-tab="${k}" aria-pressed="${S.adminTab===k}">${l}</button>`).join("")}</div>${body}`;
 }
@@ -1228,6 +1269,7 @@ function aReset(){
     <h2>Reset for next year</h2>
     <p>Clears the tournament so you can set it up again. Players and their handicaps stay, along with the course, rules and photos.</p>
     <div class="reset-opts">
+      <label class="ropt"><input id="rSave" type="checkbox" ${S.rSave!==false?"checked":""}> <span><b>Save ${esc(historyYear())} to Past years first</b><small>Keeps a copy of every score, team and golfer before anything is cleared.</small></span></label>
       <label class="ropt"><input id="rScores" type="checkbox" ${S.rScores!==false?"checked":""}> <span><b>Clear all scores</b><small>${nScores} golfer${nScores===1?"":"s"} with scores entered. Empties the Live Leaderboard and both poker pots.</small></span></label>
       <label class="ropt"><input id="rChat" type="checkbox" ${S.rChat!==false?"checked":""}> <span><b>Clear chat</b><small>${(S.chat||[]).length} message${(S.chat||[]).length===1?"":"s"} in Trash Talk.</small></span></label>
       <label class="ropt"><input id="rTeams" type="checkbox" ${S.rTeams!==false?"checked":""}> <span><b>Clear all teams</b><small>${nTeams} team${nTeams===1?"":"s"} and their tee times. ${nAssigned} golfer${nAssigned===1?"":"s"} go back to unassigned.</small></span></label>
@@ -1321,13 +1363,14 @@ function render(){
   if(onW){ W.innerHTML=S.view==="division"?vDivision():vWelcome(); return; }
   document.getElementById("brand").textContent=eventName();
   document.getElementById("footAdmin").hidden=!isAdmin||S.view==="admin";
+  document.getElementById("footHistory").hidden=!(S.history||[]).length||S.view==="history";
   document.getElementById("footSignIn").hidden=isAdmin;
   document.getElementById("footSignOut").hidden=!isAdmin;
   document.getElementById("navRules").setAttribute("aria-pressed",String(!!S.rulesOpen));
   document.getElementById("navBoard").setAttribute("aria-pressed",String(!!S.boardOpen));
   renderBoard(); renderRules(); renderChat();
   const html = !db ? `<div class="empty"><b>Connecting…</b><span>If this doesn't load, check your internet connection and reload.</span></div>`
-    : S.view==="choose"?vChoose() : S.view==="board"?vBoard() : S.view==="team"?vTeam() : S.view==="admin"?vAdmin() : vChoose();
+    : S.view==="choose"?vChoose() : S.view==="board"?vBoard() : S.view==="team"?vTeam() : S.view==="admin"?vAdmin() : S.view==="history"?vHistory() : vChoose();
   // preserve focus on inputs during live re-render
   const a=document.activeElement, fid=a&&a.id, sel=a&&a.selectionStart;
   if(fid && /^(ev|p|t|c)[A-Z]/.test(fid) && S.view==="admin") return; // don't clobber a form being typed in
@@ -1737,6 +1780,7 @@ document.getElementById("chatForm").addEventListener("submit",async e=>{
   btn.disabled=false; inp.focus();
 });
 document.getElementById("footAdmin").onclick=()=>go("admin");
+document.getElementById("footHistory").onclick=()=>go("history");
 document.getElementById("footSignIn").onclick=()=>adminSignIn();
 document.getElementById("footSignOut").onclick=async()=>{await firebase.auth().signOut();toast("Signed out");};
 document.getElementById("navRules").onclick=()=>openRules();
@@ -1824,12 +1868,22 @@ app.addEventListener("click",async e=>{
     S.importing=false; render(); return;
   }
   if(act==="resetcancel"){S.armed=null;return render();}
+  if(act==="history"){ S.histYear=null; return go("history"); }
+  if(act==="hyear"){ S.histYear=b.dataset.year; return render(); }
+  if(act==="hview"){ S.histYear=b.dataset.year; return go("history"); }
+  if(act==="hsave"){ if(S.histSaving) return; S.histSaving=true; render();
+    try{ const y=await saveHistory(); toast(y+" saved to Past years"); }catch(e){ toast(e?.code==="permission-denied"?"Only the tournament admin can change this.":"Couldn't save. Check your connection and try again."); }
+    S.histSaving=false; render(); return; }
+  if(act==="hdel"){ const y=b.dataset.year; if(S.armed!=="hdel"+y){ S.armed="hdel"+y; return render(); }
+    S.armed=null; await write(()=>db.doc("history/"+y).delete(),y+" removed from Past years"); render(); return; }
   if(act==="reset"){
     const cs=document.getElementById("rScores")?.checked, ct=document.getElementById("rTeams")?.checked, cc=document.getElementById("rChat")?.checked;
     S.rScores=cs; S.rTeams=ct; S.rChat=cc;
     if(!cs&&!ct&&!cc) return toast("Tick at least one thing to clear.");
     if(S.armed!=="reset"){S.armed="reset";return render();}
+    const sv=document.getElementById("rSave")?.checked; S.rSave=sv;
     S.resetting=true; render();
+    if(sv&&cs&&Object.keys(S.scores).length){ try{ await saveHistory(); }catch(e){ S.resetting=false; S.armed=null; render(); return toast("Couldn't save to Past years, so nothing was cleared. Check your connection and try again."); } }
     try{
       if(cs){ for(const id of Object.keys(S.scores)) await db.doc("scores/"+id).delete(); }
       if(cc){ let snap; do{ snap=await db.collection("chat").limit(200).get(); for(const d of snap.docs) await db.doc("chat/"+d.id).delete(); }while(snap.size===200); }
@@ -1868,7 +1922,7 @@ app.addEventListener("click",async e=>{
 app.addEventListener("change",async e=>{
   const inp=e.target;
   if(inp.id==="iTest"){S.iTest=inp.checked;return;}
-  if(inp.id==="rScores"||inp.id==="rTeams"||inp.id==="rChat"){S[inp.id]=inp.checked;S.armed=null;render();return;}
+  if(inp.id==="rScores"||inp.id==="rTeams"||inp.id==="rChat"||inp.id==="rSave"){S[inp.id]=inp.checked;S.armed=null;render();return;}
   if(inp.id==="pTbd"){const hi=document.getElementById("pHcp"); hi.disabled=inp.checked; if(inp.checked) hi.value=""; else hi.focus(); return;}
   if(inp.type==="time"&&inp.dataset.team){ const id=inp.dataset.team; const val=inp.value||null; inp.blur();
     await write(()=>db.doc("teams/"+id).update({teeTime:val}), val?"Tee time set to "+fmtTime(val):"Tee time cleared"); render(); return; } if(inp.type!=="file"||!inp.dataset.slot||!inp.files[0]) return;
@@ -1996,6 +2050,7 @@ render();
   watch("hero",()=>db.doc("config/hero").onSnapshot(s=>{ got("hero",s); S.hero=s.exists?s.data():null;render();},err("hero")));
   watch("ace",()=>db.doc("config/ace").onSnapshot(s=>{ got("ace",s); S.ace=s.exists?s.data():null; loadAce(S.ace?.data); render();},err("ace")));
   watch("heckle",()=>db.doc("config/heckle").onSnapshot(s=>{ got("heckle",s); S.heckle=s.exists?s.data():null; loadHeckle(S.heckle?.data||DEFAULT_HECKLE); render();},err("heckle")));
+  watch("history",()=>db.collection("history").onSnapshot(s=>{ got("history",s); S.history=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.id.localeCompare(a.id)); render();},err("history")));
   watch("logo",()=>db.doc("config/logo").onSnapshot(s=>{ got("logo",s); S.logo=s.exists?s.data():null;render();},err("logo")));
   render();
 })();
