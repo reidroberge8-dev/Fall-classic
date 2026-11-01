@@ -75,6 +75,10 @@ p{margin:0}
 .hero{display:flex;flex-direction:column;gap:10px;padding-block:8px}
 .meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-weight:600}
 
+.year-pick{display:flex;align-items:center;gap:10px}
+.year-pick label{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.year-pick select{font-size:18px;font-weight:700;background:var(--surface);color:inherit;border:1.5px solid var(--line);border-radius:8px;padding:8px 36px 8px 12px;min-height:44px;min-width:120px}
+.full-results{margin:10px 0 -4px;font-size:clamp(24px,7vw,30px)}
 .winners .win-div{display:flex;flex-direction:column;gap:10px}
 .winners .win-div+.win-div{border-top:1px solid var(--line);padding-top:14px}
 .winners h3{margin:0;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--green)}
@@ -1206,8 +1210,8 @@ function vHistory(){
   const y=list.find(x=>x.id===S.histYear)||list[0];
   return `${back}
   <div><div class="eyebrow">Past years</div><h1>${esc(y.name||"Fall Classic")} ${esc(y.id)}</h1>${y.date?`<p class="muted" style="margin:4px 0 0">Final results · ${esc(fmtDate(y.date))}</p>`:""}</div>
-  ${list.length>1?`<div class="seg" role="group" aria-label="Year">${list.map(x=>`<button type="button" data-act="hyear" data-year="${esc(x.id)}" aria-pressed="${x.id===y.id}">${esc(x.id)}</button>`).join("")}</div>`:""}
-  ${withYear(y,()=>vWinners(y)+vBoard())}`;
+  <div class="year-pick"><label for="hYear">Year</label><select id="hYear">${list.map(x=>`<option value="${esc(x.id)}" ${x.id===y.id?"selected":""}>${esc(x.id)}</option>`).join("")}</select></div>
+  ${withYear(y,()=>vWinners(y)+`<h2 class="full-results">Full Results</h2>`+vBoard())}`;
 }
 function aHistory(){
   const year=historyYear(), list=S.history||[], saved=list.find(x=>x.id===year), busy=S.histSaving;
@@ -1964,6 +1968,7 @@ app.addEventListener("click",async e=>{
 app.addEventListener("change",async e=>{
   const inp=e.target;
   if(inp.id==="iTest"){S.iTest=inp.checked;return;}
+  if(inp.id==="hYear"){S.histYear=inp.value;render();window.scrollTo(0,0);return;}
   if(inp.id==="rScores"||inp.id==="rTeams"||inp.id==="rChat"||inp.id==="rSave"){S[inp.id]=inp.checked;S.armed=null;render();return;}
   if(inp.id==="pTbd"){const hi=document.getElementById("pHcp"); hi.disabled=inp.checked; if(inp.checked) hi.value=""; else hi.focus(); return;}
   if(inp.type==="time"&&inp.dataset.team){ const id=inp.dataset.team; const val=inp.value||null; inp.blur();
