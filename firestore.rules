@@ -18,10 +18,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Everyone can read everything; only the admin can change settings,
-    // players, teams, course, rules and photos.
-    match /{document=**} {
-      allow read: if true;
+    // Everyone can read everything except buy-in payments; only the admin can change settings,
+    // players, teams, course, rules, photos, past years and payments.
+    match /{coll}/{docId} {
+      allow read: if !(coll == 'config' && docId == 'buyins') || isAdmin();
       allow write: if isAdmin();
     }
 

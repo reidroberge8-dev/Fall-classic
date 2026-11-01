@@ -75,6 +75,18 @@ p{margin:0}
 .hero{display:flex;flex-direction:column;gap:10px;padding-block:8px}
 .meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-weight:600}
 
+.buy-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.buy-list li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.buy-list li:first-child{border-top:0}
+.buy-who{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto;cursor:pointer}
+.buy-who input{width:24px;height:24px;flex:none;accent-color:var(--green)}
+.buy-who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.buy-list li:not(.is-paid) .buy-who b{color:var(--muted);font-weight:600}
+.buy-fields{display:flex;gap:6px;align-items:center;flex:none}
+.buy-amt{display:inline-flex;align-items:center;gap:2px;font-weight:700}
+.buy-amt input{width:58px;font-size:16px;background:var(--bg);color:inherit;border:1.5px solid var(--line);border-radius:8px;padding:8px;min-height:40px}
+.buy-fields select{font-size:16px;background:var(--bg);color:inherit;border:1.5px solid var(--line);border-radius:8px;padding:8px 4px;min-height:40px;width:92px}
+.buy-fee{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .year-pick{display:flex;align-items:center;gap:10px}
 .year-pick label{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 .year-pick select{font-size:18px;font-weight:700;background:var(--surface);color:inherit;border:1.5px solid var(--line);border-radius:8px;padding:8px 36px 8px 12px;min-height:44px;min-width:120px}
@@ -1230,8 +1242,8 @@ function aHistory(){
 /* ---------- admin ---------- */
 function vAdmin(){
   if(!isAdmin) {S.view="choose";return vChoose();}
-  const tabs=[["event","Event & rules"],["course","Course"],["players","Players"],["teams","Teams"],["reset","Reset"]];
-  const body=S.adminTab==="event"?aEvent():S.adminTab==="course"?aCourse():S.adminTab==="players"?aPlayers():S.adminTab==="reset"?aHistory()+aReset()+aImport():aTeams();
+  const tabs=[["event","Event & rules"],["course","Course"],["players","Players"],["teams","Teams"],["buyins","Buy-ins"],["reset","Reset"]];
+  const body=S.adminTab==="event"?aEvent():S.adminTab==="course"?aCourse():S.adminTab==="players"?aPlayers():S.adminTab==="reset"?aHistory()+aReset()+aImport():S.adminTab==="buyins"?aBuyins():aTeams();
   return `<div><div class="eyebrow">Tournament admin</div><h1>${esc(eventName())}</h1></div>
   <div class="tabs" role="group">${tabs.map(([k,l])=>`<button type="button" data-act="atab" data-tab="${k}" aria-pressed="${S.adminTab===k}">${l}</button>`).join("")}</div>${body}`;
 }
@@ -1327,6 +1339,36 @@ function aReset(){
     </div>
   </section>`;
 }
+/* Buy-in tracking: who paid, how much and how. Stored in Firestore at config/buyins as {fee, entries:{playerId:{paid,amount,method}}}. */
+const PAY_METHODS=["Cash","Venmo","Zelle","PayPal","Apple Pay","Check","Other"];
+const money=v=>"$"+(Math.round((Number(v)||0)*100)/100).toLocaleString(undefined,{minimumFractionDigits:Number(v)%1?2:0,maximumFractionDigits:2});
+function aBuyins(){
+  const B=S.buyins||{}, E=B.entries||{}, fee=B.fee??"";
+  const all=S.players, paid=all.filter(p=>E[p.id]?.paid), total=paid.reduce((s,p)=>s+(Number(E[p.id].amount)||0),0);
+  const byM={}; for(const p of paid){ const m=E[p.id].method||"Not set"; byM[m]=(byM[m]||0)+(Number(E[p.id].amount)||0); }
+  const owed=fee!==""?(all.length-paid.length)*Number(fee):null;
+  const groups=["men","ladies"].map(d=>{
+    let ps=all.filter(p=>p.division===d).sort(byName); const nPaid=ps.filter(p=>E[p.id]?.paid).length;
+    if(S.buyUnpaid) ps=ps.filter(p=>!E[p.id]?.paid);
+    return `<section class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h2>${divName(d)}</h2><span class="muted num">${nPaid} of ${all.filter(p=>p.division===d).length} paid</span></div>
+    ${ps.length?`<ul class="buy-list">${ps.map(p=>{ const e=E[p.id]||{}; return `<li class="${e.paid?"is-paid":""}">
+      <label class="buy-who"><input type="checkbox" id="bPaid-${esc(p.id)}" data-pid="${esc(p.id)}" ${e.paid?"checked":""}><b>${esc(p.name)}</b></label>
+      <div class="buy-fields">
+        <span class="buy-amt">$<input id="bAmt-${esc(p.id)}" data-pid="${esc(p.id)}" type="number" inputmode="decimal" min="0" step="1" value="${e.amount??""}" placeholder="${fee!==""?esc(fee):"0"}" aria-label="Amount ${esc(p.name)} paid"></span>
+        <select id="bMeth-${esc(p.id)}" data-pid="${esc(p.id)}" aria-label="How ${esc(p.name)} paid"><option value="">How?</option>${PAY_METHODS.map(m=>`<option ${e.method===m?"selected":""}>${m}</option>`).join("")}</select>
+      </div></li>`}).join("")}</ul>`
+      :`<p class="muted">${S.buyUnpaid?"Everyone here has paid.":`No ${divName(d).toLowerCase()} golfers yet.`}</p>`}</section>`;
+  }).join("");
+  return `<section class="panel">
+    <h2>Buy-ins</h2>
+    <div class="stat"><div><b class="num">${money(total)}</b><span class="muted">collected</span></div><div><b class="num">${paid.length}/${all.length}</b><span class="muted">paid</span></div>${owed!=null&&owed>0?`<div><b class="num">${money(owed)}</b><span class="muted">still owed</span></div>`:""}</div>
+    ${Object.keys(byM).length?`<p class="muted num" style="margin:0">${Object.entries(byM).map(([m,v])=>`${esc(m)} ${money(v)}`).join(" · ")}</p>`:""}
+    <div class="buy-fee"><div class="field"><label for="bFee">Buy-in per golfer</label><span class="buy-amt">$<input id="bFee" type="number" inputmode="decimal" min="0" step="1" value="${esc(fee)}" placeholder="0"></span></div>
+      <label class="tbd"><input id="bUnpaid" type="checkbox" ${S.buyUnpaid?"checked":""}> Only show who hasn't paid</label></div>
+    <p class="note">Checking someone off fills in the buy-in amount. Change it if they paid a different amount.</p>
+  </section>${groups}
+  ${paid.length?`<section class="panel"><h2>Start over</h2><p>Clears every payment so you can track next year's buy-ins.</p><div class="row-actions"><button class="btn danger ${S.armed==="bclear"?"armed":""}" type="button" data-act="bclear">${S.armed==="bclear"?"Yes, clear all payments":"Clear all payments"}</button></div></section>`:""}`;
+}
 function aPlayers(){
   const ed=S.editPlayer?S.players.find(p=>p.id===S.editPlayer):null;
   const groups=["men","ladies"].map(d=>{
@@ -1419,7 +1461,7 @@ function render(){
     : S.view==="choose"?vChoose() : S.view==="board"?vBoard() : S.view==="team"?vTeam() : S.view==="admin"?vAdmin() : S.view==="history"?vHistory() : vChoose();
   // preserve focus on inputs during live re-render
   const a=document.activeElement, fid=a&&a.id, sel=a&&a.selectionStart;
-  if(fid && /^(ev|p|t|c)[A-Z]/.test(fid) && S.view==="admin") return; // don't clobber a form being typed in
+  if(fid && /^(ev|p|t|c|b)[A-Z]/.test(fid) && !/^b(Paid|Meth)-|^bUnpaid$/.test(fid) && S.view==="admin") return; // don't clobber a form being typed in
   app.innerHTML=html; fitGameTitles(); fitHoleFacts(); fitOneLine(app);
   if(fid){const n=document.getElementById(fid); if(n){n.focus(); try{if(sel!=null)n.setSelectionRange(sel,sel)}catch(e){}}}
 }
@@ -1915,6 +1957,7 @@ app.addEventListener("click",async e=>{
   }
   if(act==="resetcancel"){S.armed=null;return render();}
   if(act==="history"){ S.histYear=null; return go("history"); }
+  if(act==="bclear"){ if(S.armed!=="bclear"){S.armed="bclear";return render();} S.armed=null; await write(()=>db.doc("config/buyins").set({fee:S.buyins?.fee??null,entries:{}}),"Payments cleared"); render(); return; }
   if(act==="hyear"){ S.histYear=b.dataset.year; return render(); }
   if(act==="hview"){ S.histYear=b.dataset.year; return go("history"); }
   if(act==="hsave"){ if(S.histSaving) return; S.histSaving=true; render();
@@ -1968,6 +2011,14 @@ app.addEventListener("click",async e=>{
 app.addEventListener("change",async e=>{
   const inp=e.target;
   if(inp.id==="iTest"){S.iTest=inp.checked;return;}
+  if(inp.id==="bUnpaid"){S.buyUnpaid=inp.checked;render();return;}
+  if(inp.id==="bFee"){ const v=inp.value===""?null:Math.max(0,Number(inp.value)||0); await write(()=>db.doc("config/buyins").set({fee:v},{merge:true}),"Buy-in set"); return; }
+  if(/^b(Paid|Amt|Meth)-/.test(inp.id)){ const pid=inp.dataset.pid, cur=(S.buyins?.entries||{})[pid]||{}, fee=S.buyins?.fee; let upd={};
+    if(inp.id.startsWith("bPaid-")){ upd.paid=inp.checked; if(inp.checked&&(cur.amount==null||cur.amount==="")&&fee!=null) upd.amount=fee; }
+    else if(inp.id.startsWith("bAmt-")){ upd.amount=inp.value===""?null:Math.max(0,Number(inp.value)||0); if(upd.amount&&!cur.paid) upd.paid=true; }
+    else { upd.method=inp.value||null; if(inp.value&&!cur.paid){ upd.paid=true; if(cur.amount==null&&fee!=null) upd.amount=fee; } }
+    const name=S.players.find(p=>p.id===pid)?.name||"Golfer";
+    await write(()=>db.doc("config/buyins").set({entries:{[pid]:{...cur,...upd}}},{merge:true}), upd.paid===false?name+" marked unpaid":null); return; }
   if(inp.id==="hYear"){S.histYear=inp.value;render();window.scrollTo(0,0);return;}
   if(inp.id==="rScores"||inp.id==="rTeams"||inp.id==="rChat"||inp.id==="rSave"){S[inp.id]=inp.checked;S.armed=null;render();return;}
   if(inp.id==="pTbd"){const hi=document.getElementById("pHcp"); hi.disabled=inp.checked; if(inp.checked) hi.value=""; else hi.focus(); return;}
@@ -2058,7 +2109,7 @@ render();
     if(window.__rewatchMissing) window.__rewatchMissing();
     const was=isAdmin; isAdmin=!u.isAnonymous && ADMIN_EMAILS.includes((u.email||"").toLowerCase());
     if(!u.isAnonymous&&!isAdmin){ toast("That Google account isn't the tournament admin."); await auth.signOut(); return; }
-    if(isAdmin&&!was) toast("Signed in as admin");
+    if(isAdmin&&!was){ toast("Signed in as admin"); if(window.__watchBuyins) window.__watchBuyins(); }
     if(!isAdmin&&S.view==="admin") S.view="welcome";
     render();
   });
@@ -2097,6 +2148,9 @@ render();
   watch("hero",()=>db.doc("config/hero").onSnapshot(s=>{ got("hero",s); S.hero=s.exists?s.data():null;render();},err("hero")));
   watch("ace",()=>db.doc("config/ace").onSnapshot(s=>{ got("ace",s); S.ace=s.exists?s.data():null; loadAce(S.ace?.data); render();},err("ace")));
   watch("heckle",()=>db.doc("config/heckle").onSnapshot(s=>{ got("heckle",s); S.heckle=s.exists?s.data():null; loadHeckle(S.heckle?.data||DEFAULT_HECKLE); render();},err("heckle")));
+  // Payments are private: only the admin's phone loads them (Firestore rules also block everyone else).
+  window.__watchBuyins=()=>watch("buyins",()=>db.doc("config/buyins").onSnapshot(s=>{ got("buyins",s); S.buyins=s.exists?s.data():{}; render();},err("buyins")));
+  if(isAdmin) window.__watchBuyins();
   watch("history",()=>db.collection("history").onSnapshot(s=>{ got("history",s); S.history=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.id.localeCompare(a.id)); render();},err("history")));
   watch("logo",()=>db.doc("config/logo").onSnapshot(s=>{ got("logo",s); S.logo=s.exists?s.data():null;render();},err("logo")));
   render();
