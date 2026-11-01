@@ -1126,6 +1126,7 @@ function vTeamCard(t,ps,bare){
   return `<section class="panel"><h2>Team scorecard</h2>${inner}<h3>Putts</h3>${putts}</section>
     <button class="btn" data-act="leave" type="button">This isn't my team</button>`;
 }
+const BUY_IN=10; // per-golfer buy-in, matches the Buy-in section of the rules
 function vBoard(){
   const d=S.boardDiv||S.div;
   const ts=S.teams.filter(t=>t.division===d).map(t=>({t,x:teamTotals(t)}))
@@ -1173,7 +1174,7 @@ function vBoard(){
     <tbody>${ln.map(r=>`<tr><td class="c">${r.pos}</td><td>${esc(r.p.name)}${r.pos===1?` <span class="star" aria-label="low net leader">★</span>`:""}</td><td class="c"><b>${fmtPar(r.c.toPar)}</b></td><td class="c">${r.c.gross}</td><td class="c">${r.c.netT}</td><td class="c">${r.c.holes===18?"F":r.c.holes}</td></tr>`).join("")}</tbody></table></div><p class="note">Lowest net score on the day wins the $${d==="ladies"?15:20} individual prize. Net is shown to par over the holes each golfer has played.</p></section>`:""}
   ${pl.length?`<section class="panel"><h2>Putting</h2><div class="scroll"><table class="card-table num putt-table">
     <thead><tr><th>Golfer</th><th class="c">Cards</th><th class="c">0/1 putts</th><th class="c">Owed</th><th class="c">Putts</th></tr></thead>
-    <tbody>${pl.map(r=>`<tr><td>${esc(r.p.name)}</td><td class="c"><b>${r.c.cards}</b>${r.c.bonus?`<span class="thru-sm">incl. +2 🏆</span>`:""}</td><td class="c p1"><b>${r.c.zero+r.c.one}</b>${maxOne>0&&r.c.zero+r.c.one===maxOne?` <span class="star" aria-label="most 0 or 1-putts">★</span>`:""}</td><td class="c ${r.c.three?"p3":"muted"}"><b>$${r.c.three}</b></td><td class="c"><b>${r.c.tot}</b><span class="thru-sm">thru ${r.c.holes}</span></td></tr>`).join("")}</tbody></table></div><p class="note">Cards = 2 to start, +1 per 1-putt, +2 per 0-putt hole.${d==="ladies"?` The 1st place team gets +2 each (🏆)${S.histMode?"":", going to whoever is leading right now"}.`:""}</p></section>`:""}`;
+    <tbody>${pl.map(r=>`<tr><td>${esc(r.p.name)}</td><td class="c"><b>${r.c.cards}</b>${r.c.bonus?`<span class="thru-sm">incl. +2 🏆</span>`:""}</td><td class="c p1"><b>${r.c.zero+r.c.one}</b>${maxOne>0&&r.c.zero+r.c.one===maxOne?` <span class="star" aria-label="most 0 or 1-putts">★</span>`:""}</td><td class="c ${r.c.three?"p3":""}"><b>$${BUY_IN+r.c.three}</b></td><td class="c"><b>${r.c.tot}</b><span class="thru-sm">thru ${r.c.holes}</span></td></tr>`).join("")}</tbody></table></div><p class="note">Cards = 2 to start, +1 per 1-putt, +2 per 0-putt hole. Owed = $${BUY_IN} buy-in + $1 per 3-putt.${d==="ladies"?` The 1st place team gets +2 each (🏆)${S.histMode?"":", going to whoever is leading right now"}.`:""}</p></section>`:""}`;
 }
 
 /* ---------- past years ---------- */
