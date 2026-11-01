@@ -1113,17 +1113,20 @@ function vTeamCard(t,ps,bare){
     const pr=hs.reduce((x,n)=>x+hole(n).par,0);
     const prow=p=>{let g=0,all=true;const cells=hs.map(n=>{const e=entry(p.id,n);const th=teamHole(t,n);const cnt=th&&th.ids.includes(p.id);if(e)g+=e.s;else all=false;
       return `<td class="${cnt?"cnt":""}">${e?`${mark(e.s,hole(n).par)}<sup class="netsup" aria-label="net ${e.s-strokes(p,n)}">${e.s-strokes(p,n)}</sup>`:""}</td>`}).join("");
-      return `<tr><th scope="row">${esc(p.name.split(" ")[0])}</th>${cells}<td class="sum">${g||""}</td>${full?fullCell(p):""}</tr>`;};
+      return `<tr><th scope="row">${esc(p.name.split(" ")[0])}</th>${cells}<td class="sum">${g||""}</td>${full?fullCell(p):frontNet(p)}</tr>`;};
     let ts=0;const tcells=hs.map(n=>{const th=teamHole(t,n);if(th)ts+=th.score;return `<td>${th?th.score:""}</td>`}).join("");
     // Back 9 also gets an 18-hole Total column: gross with net underneath for each golfer, and the team's total score
     const full=b===18&&a>1, tt=full?teamTotals(t):null;
     const fullCell=p=>{let g=0,nt=0,k=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(e){g+=e.s;nt+=e.s-strokes(p,n);k++;}}
       return `<td class="sum tot18">${k?`${g}<sup class="netsup" aria-label="net ${nt}">${nt}</sup>`:""}</td>`;};
     const par18=rng(1,18).reduce((x,n)=>x+hole(n).par,0);
-    return `<div class="scroll"><table class="grid num ${t.division==="ladies"?"lad":""}"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">${full?"In":"Out"}</th>${full?`<th class="sum tot18">Total</th>`:""}</tr></thead>
-      <tbody><tr class="par"><th scope="row">Par</th>${hs.map(n=>`<td>${hole(n).par}</td>`).join("")}<td class="sum">${pr}</td>${full?`<td class="sum tot18">${par18}</td>`:""}</tr>
+    // Front 9 gets a Net column so it lines up with the back 9's Total column
+    const front=a===1&&b===9, ft=front?teamTotals(t):null;
+    const frontNet=p=>{ if(!front) return ""; let nt=0,k=0; for(const n of hs){ const e=entry(p.id,n); if(e){ nt+=e.s-strokes(p,n); k++; } } return `<td class="sum tot18">${k?nt:""}</td>`; };
+    return `<div class="scroll"><table class="grid num ${t.division==="ladies"?"lad":""}"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">${full?"In":"Out"}</th>${full?`<th class="sum tot18">Total</th>`:front?`<th class="sum tot18">Net</th>`:""}</tr></thead>
+      <tbody><tr class="par"><th scope="row">Par</th>${hs.map(n=>`<td>${hole(n).par}</td>`).join("")}<td class="sum">${pr}</td>${full?`<td class="sum tot18">${par18}</td>`:front?`<td class="sum tot18">${pr}</td>`:""}</tr>
       ${ps.map(prow).join("")}
-      <tr class="team-row"><th scope="row">Team</th>${tcells}<td class="sum">${ts||""}</td>${full?`<td class="sum tot18">${tt.thru?`<span aria-label="team net ${fmtPar(tt.toPar)} to par">${fmtPar(tt.toPar)}</span>`:""}</td>`:""}</tr></tbody></table></div>`;
+      <tr class="team-row"><th scope="row">Team</th>${tcells}<td class="sum">${ts||""}</td>${front?`<td class="sum tot18">${ft.thru&&ft.frontPar?fmtPar(ft.front-ft.frontPar):""}</td>`:""}${full?`<td class="sum tot18">${tt.thru?`<span aria-label="team net ${fmtPar(tt.toPar)} to par">${fmtPar(tt.toPar)}</span>`:""}</td>`:""}</tr></tbody></table></div>`;
   };
   const pc=v=>v==null?"":v<=1?"p1":v===2?"p2":"p3";
   const puttHalf=(a,b,lbl)=>{const hs=rng(a,b);
