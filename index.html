@@ -1244,7 +1244,7 @@ function vWinners(y){
     if(pl.ones&&!list.some(a=>/1-putt/i.test(a.prize))) putIn({prize:"Most 1-putts",who:pl.ones.who,detail:pl.ones.detail});
     if(pl.threes&&!list.some(a=>/3-putts/i.test(a.prize))) putIn({prize:"Most 3-putts",who:pl.threes.who,detail:pl.threes.detail,red:true});
     // Same order in every division
-    const ORDER=[/lowest net/i,/gross/i,/fewest putts|lowest.*putts/i,/1-putt/i,/3-putts/i,/poker/i];
+    const ORDER=[/lowest net/i,/gross/i,/fewest putts|lowest.*putts/i,/1-putt/i,/poker/i,/3-putts/i];
     const rank=a=>{ const i=ORDER.findIndex(r=>r.test(a.prize)); return i<0?ORDER.length:i; };
     list.sort((a,b)=>rank(a)-rank(b));
     if(!wt.length&&!list.length) return "";
