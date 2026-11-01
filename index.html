@@ -109,6 +109,7 @@ p{margin:0}
 .win-k{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .win-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .win-list li{display:flex;flex-direction:column;gap:1px}
+.win-list li.win-red,.win-list li.win-red .win-k,.win-list li.win-red .muted{color:var(--danger)}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
 .rules{margin:0;padding:0;list-style:none;counter-reset:r;display:flex;flex-direction:column}
 .rules li{counter-increment:r;display:grid;grid-template-columns:34px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
@@ -1225,12 +1226,13 @@ function lowestGross(d){
   return {who:done.filter(x=>x.g===low).map(x=>x.p.name).join(", "), detail:`${low}${most<18?` thru ${most}`:""}`}; }
 // Fewest total putts and most 1-putts (chip-ins count as 1-putts, like the leaderboard's 0/1 column), from saved scores.
 function puttLeaders(d){
-  const st=S.players.filter(p=>p.division===d).map(p=>{ let holes=0,putts=0,ones=0; for(let n=1;n<=18;n++){ const e=entry(p.id,n); if(!e) continue; holes++; const v=Number(e.p); if(!isNaN(v)){ putts+=v; if(v<=1) ones++; } } return {p,holes,putts,ones}; }).filter(x=>x.holes);
+  const st=S.players.filter(p=>p.division===d).map(p=>{ let holes=0,putts=0,ones=0,threes=0; for(let n=1;n<=18;n++){ const e=entry(p.id,n); if(!e) continue; holes++; const v=Number(e.p); if(!isNaN(v)){ putts+=v; if(v<=1) ones++; if(v>=3) threes++; } } return {p,holes,putts,ones,threes}; }).filter(x=>x.holes);
   if(!st.length) return {};
   const most=Math.max(...st.map(x=>x.holes)), done=st.filter(x=>x.holes===most), thru=most<18?` thru ${most}`:"";
-  const lowP=Math.min(...done.map(x=>x.putts)), hiO=Math.max(...done.map(x=>x.ones));
+  const lowP=Math.min(...done.map(x=>x.putts)), hiO=Math.max(...done.map(x=>x.ones)), hiT=Math.max(...done.map(x=>x.threes));
   return { fewest:{who:done.filter(x=>x.putts===lowP).map(x=>x.p.name).join(", "),detail:`${lowP}${thru}`},
-    ones:hiO>0?{who:done.filter(x=>x.ones===hiO).map(x=>x.p.name).join(", "),detail:`${hiO}${thru}`}:null }; }
+    ones:hiO>0?{who:done.filter(x=>x.ones===hiO).map(x=>x.p.name).join(", "),detail:`${hiO}${thru}`}:null,
+    threes:hiT>0?{who:done.filter(x=>x.threes===hiT).map(x=>x.p.name).join(", "),detail:`${hiT}${thru}`}:null }; }
 function vWinners(y){
   const aw=y.awards||HISTORY_AWARDS[y.id]||{};
   const block=d=>{ const wt=winningTeams(d), lg=lowestGross(d), list=[...(aw[d]||[])];
@@ -1240,10 +1242,11 @@ function vWinners(y){
     const putIn=item=>{ const i=list.findIndex(a=>/closest|poker/i.test(a.prize)); list.splice(i<0?list.length:i,0,item); };
     if(pl.fewest&&!list.some(a=>/fewest putts|lowest.*putts/i.test(a.prize))) putIn({prize:"Fewest putts",who:pl.fewest.who,detail:pl.fewest.detail});
     if(pl.ones&&!list.some(a=>/1-putt/i.test(a.prize))) putIn({prize:"Most 1-putts",who:pl.ones.who,detail:pl.ones.detail});
+    if(pl.threes&&!list.some(a=>/3-putts/i.test(a.prize))) putIn({prize:"Most 3-putts",who:pl.threes.who,detail:pl.threes.detail,red:true});
     if(!wt.length&&!list.length) return "";
     return `<div class="win-div"><h3>${divName(d)} division</h3>
       ${wt.map(w=>`<div class="win-team"><span class="win-k">🏆 Winning team</span><b>${esc(w.name)} <span class="muted">${fmtPar(w.toPar)}</span></b><span>${w.golfers.map(esc).join(", ")}</span></div>`).join("")}
-      ${list.length?`<ul class="win-list">${list.map(a=>`<li><span class="win-k">${esc(a.prize)}</span><span><b>${esc(a.who)}</b>${a.detail?` <span class="muted">· ${esc(a.detail)}</span>`:""}</span></li>`).join("")}</ul>`:""}
+      ${list.length?`<ul class="win-list">${list.map(a=>`<li class="${a.red?"win-red":""}"><span class="win-k">${esc(a.prize)}</span><span><b>${esc(a.who)}</b>${a.detail?` <span class="muted">· ${esc(a.detail)}</span>`:""}</span></li>`).join("")}</ul>`:""}
     </div>`; };
   const pin=aw.pin||[];
   const pinBlock=pin.length?`<div class="win-div"><h3>Closest to the Pin</h3><ul class="win-list">${pin.map(a=>`<li><span class="win-k">${esc(a.prize)}</span><span><b>${esc(a.who)}</b>${a.detail?` <span class="muted">· ${esc(a.detail)}</span>`:""}</span></li>`).join("")}</ul></div>`:"";
