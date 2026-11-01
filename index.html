@@ -1243,6 +1243,10 @@ function vWinners(y){
     if(pl.fewest&&!list.some(a=>/fewest putts|lowest.*putts/i.test(a.prize))) putIn({prize:"Fewest putts",who:pl.fewest.who,detail:pl.fewest.detail});
     if(pl.ones&&!list.some(a=>/1-putt/i.test(a.prize))) putIn({prize:"Most 1-putts",who:pl.ones.who,detail:pl.ones.detail});
     if(pl.threes&&!list.some(a=>/3-putts/i.test(a.prize))) putIn({prize:"Most 3-putts",who:pl.threes.who,detail:pl.threes.detail,red:true});
+    // Same order in every division
+    const ORDER=[/lowest net/i,/gross/i,/fewest putts|lowest.*putts/i,/1-putt/i,/3-putts/i,/poker/i];
+    const rank=a=>{ const i=ORDER.findIndex(r=>r.test(a.prize)); return i<0?ORDER.length:i; };
+    list.sort((a,b)=>rank(a)-rank(b));
     if(!wt.length&&!list.length) return "";
     return `<div class="win-div"><h3>${divName(d)} division</h3>
       ${wt.map(w=>`<div class="win-team"><span class="win-k">🏆 Winning team</span><b>${esc(w.name)} <span class="muted">${fmtPar(w.toPar)}</span></b><span>${w.golfers.map(esc).join(", ")}</span></div>`).join("")}
