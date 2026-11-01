@@ -1200,13 +1200,15 @@ const HISTORY_AWARDS={
     men:[
       {prize:"Lowest net score", who:"Reid", detail:"68 (Gross 80)"},
       {prize:"Most 1-putts", who:"Reid", detail:"6"},
-      {prize:"Closest to the pin – #7", who:"Ralph", detail:"21 ft 3 in"},
-      {prize:"Closest to the pin – #12", who:"Eli", detail:"19 ft 0 in"},
       {prize:"3-Putt Poker winner", who:"Tommy", detail:"$107"}],
     ladies:[
       {prize:"Lowest net score", who:"Judy", detail:"67 (Gross 97)"},
       {prize:"Fewest putts", who:"Judy", detail:"38"},
-      {prize:"3-Putt Poker winner", who:"Cali", detail:"$98"}]
+      {prize:"3-Putt Poker winner", who:"Cali", detail:"$98"}],
+    // Open to everyone, not a division prize
+    pin:[
+      {prize:"Hole #7", who:"Ralph", detail:"21 ft 3 in"},
+      {prize:"Hole #12", who:"Eli", detail:"19 ft 0 in"}]
   }
 };
 // Call this while the year's data is swapped in (inside withYear) so it reads that year's teams and scores.
@@ -1243,7 +1245,9 @@ function vWinners(y){
       ${wt.map(w=>`<div class="win-team"><span class="win-k">🏆 Winning team</span><b>${esc(w.name)} <span class="muted">${fmtPar(w.toPar)}</span></b><span>${w.golfers.map(esc).join(", ")}</span></div>`).join("")}
       ${list.length?`<ul class="win-list">${list.map(a=>`<li><span class="win-k">${esc(a.prize)}</span><span><b>${esc(a.who)}</b>${a.detail?` <span class="muted">· ${esc(a.detail)}</span>`:""}</span></li>`).join("")}</ul>`:""}
     </div>`; };
-  const body=block("men")+block("ladies");
+  const pin=aw.pin||[];
+  const pinBlock=pin.length?`<div class="win-div"><h3>Closest to the Pin</h3><ul class="win-list">${pin.map(a=>`<li><span class="win-k">${esc(a.prize)}</span><span><b>${esc(a.who)}</b>${a.detail?` <span class="muted">· ${esc(a.detail)}</span>`:""}</span></li>`).join("")}</ul></div>`:"";
+  const body=block("men")+block("ladies")+pinBlock;
   return body?`<section class="panel winners"><h2>Winners</h2>${body}</section>`:"";
 }
 function vHistory(){
