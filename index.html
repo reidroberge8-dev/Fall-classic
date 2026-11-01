@@ -1219,7 +1219,7 @@ function winningTeams(d){
 function lowestGross(d){
   const st=S.players.filter(p=>p.division===d).map(p=>{ let holes=0,g=0; for(let n=1;n<=18;n++){ const e=entry(p.id,n); if(e){ holes++; g+=e.s; } } return {p,holes,g}; }).filter(x=>x.holes);
   if(!st.length) return null; const most=Math.max(...st.map(x=>x.holes)), done=st.filter(x=>x.holes===most), low=Math.min(...done.map(x=>x.g));
-  return {who:done.filter(x=>x.g===low).map(x=>x.p.name).join(", "), detail:`Gross ${low}${most<18?` thru ${most}`:""}`}; }
+  return {who:done.filter(x=>x.g===low).map(x=>x.p.name).join(", "), detail:`${low}${most<18?` thru ${most}`:""}`}; }
 // Fewest total putts and most 1-putts (chip-ins count as 1-putts, like the leaderboard's 0/1 column), from saved scores.
 function puttLeaders(d){
   const st=S.players.filter(p=>p.division===d).map(p=>{ let holes=0,putts=0,ones=0; for(let n=1;n<=18;n++){ const e=entry(p.id,n); if(!e) continue; holes++; const v=Number(e.p); if(!isNaN(v)){ putts+=v; if(v<=1) ones++; } } return {p,holes,putts,ones}; }).filter(x=>x.holes);
