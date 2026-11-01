@@ -1220,10 +1220,23 @@ function lowestGross(d){
   const st=S.players.filter(p=>p.division===d).map(p=>{ let holes=0,g=0; for(let n=1;n<=18;n++){ const e=entry(p.id,n); if(e){ holes++; g+=e.s; } } return {p,holes,g}; }).filter(x=>x.holes);
   if(!st.length) return null; const most=Math.max(...st.map(x=>x.holes)), done=st.filter(x=>x.holes===most), low=Math.min(...done.map(x=>x.g));
   return {who:done.filter(x=>x.g===low).map(x=>x.p.name).join(", "), detail:`Gross ${low}${most<18?` thru ${most}`:""}`}; }
+// Fewest total putts and most 1-putts (chip-ins count as 1-putts, like the leaderboard's 0/1 column), from saved scores.
+function puttLeaders(d){
+  const st=S.players.filter(p=>p.division===d).map(p=>{ let holes=0,putts=0,ones=0; for(let n=1;n<=18;n++){ const e=entry(p.id,n); if(!e) continue; holes++; const v=Number(e.p); if(!isNaN(v)){ putts+=v; if(v<=1) ones++; } } return {p,holes,putts,ones}; }).filter(x=>x.holes);
+  if(!st.length) return {};
+  const most=Math.max(...st.map(x=>x.holes)), done=st.filter(x=>x.holes===most), thru=most<18?` thru ${most}`:"";
+  const lowP=Math.min(...done.map(x=>x.putts)), hiO=Math.max(...done.map(x=>x.ones));
+  return { fewest:{who:done.filter(x=>x.putts===lowP).map(x=>x.p.name).join(", "),detail:`${lowP} putts${thru}`},
+    ones:hiO>0?{who:done.filter(x=>x.ones===hiO).map(x=>x.p.name).join(", "),detail:`${hiO} one-putt${hiO===1?"":"s"}${thru}`}:null }; }
 function vWinners(y){
   const aw=y.awards||HISTORY_AWARDS[y.id]||{};
   const block=d=>{ const wt=winningTeams(d), lg=lowestGross(d), list=[...(aw[d]||[])];
     if(lg&&!list.some(a=>/gross/i.test(a.prize))){ const i=list.findIndex(a=>/lowest net/i.test(a.prize)); list.splice(i<0?0:i+1,0,{prize:"Lowest gross score",who:lg.who,detail:lg.detail}); }
+    const pl=puttLeaders(d);
+    // Putting awards sit with the scoring awards, ahead of closest-to-the-pin and poker.
+    const putIn=item=>{ const i=list.findIndex(a=>/closest|poker/i.test(a.prize)); list.splice(i<0?list.length:i,0,item); };
+    if(pl.fewest&&!list.some(a=>/fewest putts|lowest.*putts/i.test(a.prize))) putIn({prize:"Fewest putts",who:pl.fewest.who,detail:pl.fewest.detail});
+    if(pl.ones&&!list.some(a=>/1-putt/i.test(a.prize))) putIn({prize:"Most 1-putts",who:pl.ones.who,detail:pl.ones.detail});
     if(!wt.length&&!list.length) return "";
     return `<div class="win-div"><h3>${divName(d)} division</h3>
       ${wt.map(w=>`<div class="win-team"><span class="win-k">🏆 Winning team</span><b>${esc(w.name)} <span class="muted">${fmtPar(w.toPar)}</span></b><span>${w.golfers.map(esc).join(", ")}</span></div>`).join("")}
