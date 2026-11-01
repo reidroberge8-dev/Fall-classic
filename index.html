@@ -1189,8 +1189,7 @@ function vBoard(){
   </section>
   ${ts.length?`<section class="panel"><h2 class="fit1" data-max="28" data-min="15">${S.histMode?"Final Standings":"Live Standings"} – Team Competition</h2>
     <div class="lb-grid lb-head"><span>#</span><span>Team</span><span class="r">Net score</span><span class="r">Thru</span></div>
-    <div class="lb-list">${rows}</div>
-    <p class="note">Net, to par. A hole counts once every golfer on the team has entered a score.</p></section>`
+    <div class="lb-list">${rows}</div></section>`
     :`<div class="empty"><b>No ${divName(d)} teams yet</b></div>`}
   ${ln.length?`<section class="panel"><h2>Low Net – Individual</h2><div class="scroll"><table class="card-table num putt-table">
     <thead><tr><th class="c">#</th><th>Golfer</th><th class="c">Net</th><th class="c">Gross</th><th class="c">Net score</th><th class="c">Thru</th></tr></thead>
