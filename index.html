@@ -1265,7 +1265,7 @@ function vHistory(){
   return `${back}
   <div><div class="eyebrow">Past years</div><h1>${esc(y.name||"Fall Classic")} ${esc(y.id)}</h1>${y.date?`<p class="muted" style="margin:4px 0 0">Final results · ${esc(fmtDate(y.date))}</p>`:""}</div>
   <div class="year-pick"><label for="hYear">Year</label><select id="hYear">${list.map(x=>`<option value="${esc(x.id)}" ${x.id===y.id?"selected":""}>${esc(x.id)}</option>`).join("")}</select></div>
-  ${withYear(y,()=>vWinners(y)+`<h2 class="full-results">Full Results</h2>`+vBoard())}`;
+  ${withYear(y,()=>vWinners(y)+`<h2 class="full-results">Full Results ${esc(y.id)}</h2>`+vBoard())}`;
 }
 function aHistory(){
   const year=historyYear(), list=S.history||[], saved=list.find(x=>x.id===year), busy=S.histSaving;
