@@ -1229,8 +1229,8 @@ function puttLeaders(d){
   if(!st.length) return {};
   const most=Math.max(...st.map(x=>x.holes)), done=st.filter(x=>x.holes===most), thru=most<18?` thru ${most}`:"";
   const lowP=Math.min(...done.map(x=>x.putts)), hiO=Math.max(...done.map(x=>x.ones));
-  return { fewest:{who:done.filter(x=>x.putts===lowP).map(x=>x.p.name).join(", "),detail:`${lowP} putts${thru}`},
-    ones:hiO>0?{who:done.filter(x=>x.ones===hiO).map(x=>x.p.name).join(", "),detail:`${hiO} one-putt${hiO===1?"":"s"}${thru}`}:null }; }
+  return { fewest:{who:done.filter(x=>x.putts===lowP).map(x=>x.p.name).join(", "),detail:`${lowP}${thru}`},
+    ones:hiO>0?{who:done.filter(x=>x.ones===hiO).map(x=>x.p.name).join(", "),detail:`${hiO}${thru}`}:null }; }
 function vWinners(y){
   const aw=y.awards||HISTORY_AWARDS[y.id]||{};
   const block=d=>{ const wt=winningTeams(d), lg=lowestGross(d), list=[...(aw[d]||[])];
