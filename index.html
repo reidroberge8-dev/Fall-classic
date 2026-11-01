@@ -83,9 +83,11 @@ p{margin:0}
 .buy-who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .buy-name{display:flex;flex-direction:column;min-width:0;line-height:1.25}
 .buy-name small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.buy-total{font-family:var(--display);font-size:22px;flex:none}
+.buy-list li.is-paid .buy-total{color:var(--green)}
 .buy-due{font-size:12px;font-weight:700;color:var(--danger)}
 .buy-ok{font-size:12px;font-weight:700;color:var(--green)}
-.buy-list li:not(.is-paid):not(.is-full) .buy-who b{color:var(--muted);font-weight:600}
+.buy-list li:not(.is-paid) .buy-who b{color:var(--muted);font-weight:600}
 .buy-fields{display:flex;gap:6px;align-items:center;flex:none}
 .buy-amt{display:inline-flex;align-items:center;gap:2px;font-weight:700}
 .buy-amt input{width:58px;font-size:16px;background:var(--bg);color:inherit;border:1.5px solid var(--line);border-radius:8px;padding:8px;min-height:40px}
@@ -1353,33 +1355,28 @@ function buyPaid(e){ return e&&e.paid?(Number(e.amount)||0):0; }
 function aBuyins(){
   const B=S.buyins||{}, E=B.entries||{}, fee=Number(B.fee)||0, feeSet=B.fee!=null&&B.fee!=="";
   const all=S.players;
-  const row=p=>{ const e=E[p.id]||{}, t=buyThrees(p.id), owes=fee+t, got=buyPaid(e), bal=owes-got; return {p,e,t,owes,got,bal}; };
-  const R=all.map(row), total=R.reduce((s,r)=>s+r.got,0), due=R.reduce((s,r)=>s+r.owes,0), left=R.reduce((s,r)=>s+Math.max(0,r.bal),0);
-  const threesAll=R.reduce((s,r)=>s+r.t,0), full=R.filter(r=>r.owes>0&&r.bal<=0).length;
-  const byM={}; for(const r of R){ if(!r.got) continue; const m=r.e.method||"Not set"; byM[m]=(byM[m]||0)+r.got; }
+  const row=p=>{ const e=E[p.id]||{}, t=buyThrees(p.id), owes=fee+t, got=buyPaid(e), bal=e.paid?(got?owes-got:0):owes; return {p,e,t,owes,got,bal}; };
+  const R=all.map(row), total=R.reduce((s,r)=>s+(r.e.paid?r.owes-Math.max(0,r.bal):0),0), due=R.reduce((s,r)=>s+r.owes,0), left=R.reduce((s,r)=>s+Math.max(0,r.bal),0);
+  const threesAll=R.reduce((s,r)=>s+r.t,0), full=R.filter(r=>r.e.paid&&r.bal<=0).length;
   const groups=["men","ladies"].map(d=>{
-    let rs=R.filter(r=>r.p.division===d).sort((a,b)=>byName(a.p,b.p)); const nFull=rs.filter(r=>r.owes>0&&r.bal<=0).length, nAll=rs.length;
+    let rs=R.filter(r=>r.p.division===d).sort((a,b)=>byName(a.p,b.p)); const nFull=rs.filter(r=>r.e.paid&&r.bal<=0).length, nAll=rs.length;
     if(S.buyUnpaid) rs=rs.filter(r=>r.bal>0);
-    return `<section class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h2>${divName(d)}</h2><span class="muted num">${nFull} of ${nAll} paid in full</span></div>
+    return `<section class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h2>${divName(d)}</h2><span class="muted num">${nFull} of ${nAll} paid</span></div>
     ${rs.length?`<ul class="buy-list">${rs.map(({p,e,t,owes,got,bal})=>{
-      const status=owes<=0?"":bal<=0?(bal<0?`<span class="buy-ok">Overpaid ${money(-bal)}</span>`:`<span class="buy-ok">✓ Paid in full</span>`):got>0?`<span class="buy-due">Owes ${money(bal)} more</span>`:`<span class="buy-due">Owes ${money(bal)}</span>`;
-      return `<li class="${e.paid?"is-paid":""} ${owes>0&&bal<=0?"is-full":""}">
+      const status=e.paid?(bal>0&&got>0?`<span class="buy-due">Owes ${money(bal)} more (3-putt after paying)</span>`:`<span class="buy-ok">✓ Paid</span>`):owes>0?`<span class="buy-due">Not paid</span>`:"";
+      return `<li class="${e.paid?"is-paid":""}">
       <label class="buy-who"><input type="checkbox" id="bPaid-${esc(p.id)}" data-pid="${esc(p.id)}" ${e.paid?"checked":""}><span class="buy-name"><b>${esc(p.name)}</b>
         ${status}<small class="num">${t?`${money(fee)} + ${money(t)} 3-putts`:feeSet?`${money(fee)} buy-in`:""}</small></span></label>
-      <div class="buy-fields">
-        <span class="buy-amt">$<input id="bAmt-${esc(p.id)}" data-pid="${esc(p.id)}" type="number" inputmode="decimal" min="0" step="1" value="${e.amount??""}" placeholder="${owes||0}" aria-label="Amount ${esc(p.name)} paid"></span>
-        <select id="bMeth-${esc(p.id)}" data-pid="${esc(p.id)}" aria-label="How ${esc(p.name)} paid"><option value="">How?</option>${PAY_METHODS.map(m=>`<option ${e.method===m?"selected":""}>${m}</option>`).join("")}</select>
-      </div></li>`}).join("")}</ul>`
+      <b class="buy-total num">${money(owes)}</b></li>`}).join("")}</ul>`
       :`<p class="muted">${S.buyUnpaid?"Nobody here owes anything.":`No ${divName(d).toLowerCase()} golfers yet.`}</p>`}</section>`;
   }).join("");
   return `<section class="panel">
     <h2>Buy-ins</h2>
-    <div class="stat"><div><b class="num">${money(total)}</b><span class="muted">collected</span></div><div><b class="num">${money(left)}</b><span class="muted">still owed</span></div><div><b class="num">${full}/${all.length}</b><span class="muted">paid in full</span></div></div>
+    <div class="stat"><div><b class="num">${money(total)}</b><span class="muted">collected</span></div><div><b class="num">${money(left)}</b><span class="muted">still owed</span></div><div><b class="num">${full}/${all.length}</b><span class="muted">paid</span></div></div>
     <p class="muted num" style="margin:0">Total due ${money(due)}: ${money(fee*all.length)} in buy-ins + ${money(threesAll)} from ${threesAll} 3-putt${threesAll===1?"":"s"}</p>
-    ${Object.keys(byM).length?`<p class="muted num" style="margin:0">${Object.entries(byM).map(([m,v])=>`${esc(m)} ${money(v)}`).join(" · ")}</p>`:""}
     <div class="buy-fee"><div class="field"><label for="bFee">Buy-in per golfer</label><span class="buy-amt">$<input id="bFee" type="number" inputmode="decimal" min="0" step="1" value="${esc(B.fee??"")}" placeholder="0"></span></div>
-      <label class="tbd"><input id="bUnpaid" type="checkbox" ${S.buyUnpaid?"checked":""}> Only show who still owes</label></div>
-    <p class="note">Each golfer owes the buy-in plus $1 per 3-putt, and that updates as scores come in. Checking someone off fills in what they owe right now. If they 3-putt after paying, they'll show as owing more.</p>
+      <label class="tbd"><input id="bUnpaid" type="checkbox" ${S.buyUnpaid?"checked":""}> Only show who hasn't paid</label></div>
+    <p class="note">Each golfer owes the buy-in plus $1 per 3-putt, and it updates as scores come in. Check them off once they've paid.</p>
   </section>${groups}
   ${R.some(r=>r.e.paid)?`<section class="panel"><h2>Start over</h2><p>Clears every payment so you can track next year's buy-ins.</p><div class="row-actions"><button class="btn danger ${S.armed==="bclear"?"armed":""}" type="button" data-act="bclear">${S.armed==="bclear"?"Yes, clear all payments":"Clear all payments"}</button></div></section>`:""}`;
 }
@@ -2028,7 +2025,7 @@ app.addEventListener("change",async e=>{
   if(inp.id==="bUnpaid"){S.buyUnpaid=inp.checked;render();return;}
   if(inp.id==="bFee"){ const v=inp.value===""?null:Math.max(0,Number(inp.value)||0); await write(()=>db.doc("config/buyins").set({fee:v},{merge:true}),"Buy-in set"); return; }
   if(/^b(Paid|Amt|Meth)-/.test(inp.id)){ const pid=inp.dataset.pid, cur=(S.buyins?.entries||{})[pid]||{}, fee=S.buyins?.fee; let upd={};
-    if(inp.id.startsWith("bPaid-")){ upd.paid=inp.checked; if(inp.checked&&(cur.amount==null||cur.amount==="")) upd.amount=buyOwes(pid); }
+    if(inp.id.startsWith("bPaid-")){ upd.paid=inp.checked; upd.amount=inp.checked?buyOwes(pid):null; }
     else if(inp.id.startsWith("bAmt-")){ upd.amount=inp.value===""?null:Math.max(0,Number(inp.value)||0); if(upd.amount&&!cur.paid) upd.paid=true; }
     else { upd.method=inp.value||null; if(inp.value&&!cur.paid){ upd.paid=true; if(cur.amount==null||cur.amount==="") upd.amount=buyOwes(pid); } }
     const name=S.players.find(p=>p.id===pid)?.name||"Golfer";
