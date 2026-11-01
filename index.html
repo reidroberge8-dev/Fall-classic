@@ -85,6 +85,7 @@ p{margin:0}
 .buy-name small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .buy-total{font-family:var(--display);font-size:22px;flex:none}
 .buy-list li.is-paid .buy-total{color:var(--green)}
+.pay-who{display:block;font-weight:500;font-size:14px;color:var(--fg)}
 .buy-due{font-size:12px;font-weight:700;color:var(--danger)}
 .buy-ok{font-size:12px;font-weight:700;color:var(--green)}
 .buy-list li:not(.is-paid) .buy-who b{color:var(--muted);font-weight:600}
@@ -1352,6 +1353,42 @@ const money=v=>"$"+(Math.round((Number(v)||0)*100)/100).toLocaleString(undefined
 function buyThrees(pid){ let k=0; for(let n=1;n<=18;n++){ const e=entry(pid,n); if(e&&Number(e.p)>=3) k++; } return k; }
 function buyOwes(pid){ return (Number(S.buyins?.fee)||0)+buyThrees(pid); }
 function buyPaid(e){ return e&&e.paid?(Number(e.amount)||0):0; }
+/* Payouts owed this year, from the live scores. Same prizes and amounts as the Payouts section of the rules. */
+function payoutList(d){
+  const names=a=>a.map(x=>x.name).join(", ");
+  const split=(amt,who)=>who.length>1?`${money(amt/who.length)} each (tie)`:"";
+  const ps=S.players.filter(p=>p.division===d);
+  const stat=p=>{ let holes=0,net_=0,par=0,putts=0,ones=0; for(let n=1;n<=18;n++){ const e=entry(p.id,n), hh=hole(n); if(!e||!hh) continue; holes++; net_+=e.s-strokes(p,n); par+=Number(hh.par)||0; const v=Number(e.p); if(!isNaN(v)){ putts+=v; if(v<=1) ones++; } } return {p,holes,toPar:net_-par,putts,ones}; };
+  const st=ps.map(stat).filter(x=>x.holes); const most=st.length?Math.max(...st.map(x=>x.holes)):0, done=st.filter(x=>x.holes===most);
+  const best=(arr,key,low)=>{ if(!arr.length) return []; const v=low?Math.min(...arr.map(key)):Math.max(...arr.map(key)); return arr.filter(x=>key(x)===v).map(x=>x.p); };
+  let threes=0; for(const p of ps){ if(!S.teams.some(t=>t.id===p.teamId)) continue; for(let n=1;n<=18;n++){ const e=entry(p.id,n); if(e&&Number(e.p)>=3) threes++; } }
+  const pot=(d==="ladies"?30:40)+threes, wt=winningTeams(d), low=best(done,x=>x.toPar,true);
+  const rows=[];
+  if(d==="men"){
+    const team=wt.flatMap(w=>w.golfers);
+    rows.push({prize:"1st place team",amt:80,who:wt.length?wt.map(w=>`${w.name}: ${w.golfers.join(", ")}`).join(" · "):"",per:team.length?`${money(80/team.length)} per player${wt.length>1?" (tie)":""}`:"$20 per player"});
+    const one=best(done.filter(x=>x.ones>0),x=>x.ones,false);
+    rows.push({prize:"Most 1-putts",amt:20,who:one.length?`${names(one)} (${done.find(x=>x.p===one[0]).ones})`:"",per:split(20,one)});
+    rows.push({prize:"Lowest net score",amt:20,who:low.length?`${names(low)} (${fmtPar(done.find(x=>x.p===low[0]).toPar)})`:"",per:split(20,low)});
+  } else {
+    rows.push({prize:"1st place team",amt:null,label:"+2 🃏",who:wt.length?wt.map(w=>w.name).join(" · "):"",per:"Two extra poker cards each, no cash"});
+    const fp=best(done,x=>x.putts,true);
+    rows.push({prize:"Lowest total putts",amt:15,who:fp.length?`${names(fp)} (${done.find(x=>x.p===fp[0]).putts})`:"",per:split(15,fp)});
+    rows.push({prize:"Lowest net score",amt:15,who:low.length?`${names(low)} (${fmtPar(done.find(x=>x.p===low[0]).toPar)})`:"",per:split(15,low)});
+  }
+  rows.push({prize:"3-Putt Poker pot",amt:pot,who:"Best poker hand at the end",per:`${money(d==="ladies"?30:40)} start + ${money(threes)} from 3-putts`,poker:true});
+  return rows;
+}
+function aPayouts(){
+  const block=d=>{ const rows=payoutList(d), cash=rows.reduce((s,r)=>s+(r.amt||0),0);
+    return `<section class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h2>${divName(d)} Payouts</h2><span class="muted num">${money(cash)} total</span></div>
+      ${rows.map(r=>`<div class="payrow ${r.poker?"poker":""}"><span class="place">${esc(r.prize)}${r.who?`<span class="pay-who"> → ${esc(r.who)}</span>`:`<span class="pay-who muted"> → No scores yet</span>`}</span><span class="amt num">${r.amt!=null?money(r.amt):esc(r.label||"")}</span><span class="per">${esc(r.per||"")}</span></div>`).join("")}
+    </section>`; };
+  const total=["men","ladies"].reduce((s,d)=>s+payoutList(d).reduce((a,r)=>a+(r.amt||0),0),0);
+  return `<h2 class="full-results">Payouts</h2>
+  <p class="muted" style="margin:-6px 0 0">Based on the scores so far. Total cash out: <b class="num">${money(total)}</b>. Closest-to-the-pin prizes aren't tracked in the app.</p>
+  ${block("men")}${block("ladies")}`;
+}
 function aBuyins(){
   const B=S.buyins||{}, E=B.entries||{}, fee=Number(B.fee)||0, feeSet=B.fee!=null&&B.fee!=="";
   const all=S.players;
@@ -1377,7 +1414,7 @@ function aBuyins(){
     <div class="buy-fee"><div class="field"><label for="bFee">Buy-in per golfer</label><span class="buy-amt">$<input id="bFee" type="number" inputmode="decimal" min="0" step="1" value="${esc(B.fee??"")}" placeholder="0"></span></div>
       <label class="tbd"><input id="bUnpaid" type="checkbox" ${S.buyUnpaid?"checked":""}> Only show who hasn't paid</label></div>
     <p class="note">Each golfer owes the buy-in plus $1 per 3-putt, and it updates as scores come in. Check them off once they've paid.</p>
-  </section>${groups}
+  </section>${groups}${aPayouts()}
   ${R.some(r=>r.e.paid)?`<section class="panel"><h2>Start over</h2><p>Clears every payment so you can track next year's buy-ins.</p><div class="row-actions"><button class="btn danger ${S.armed==="bclear"?"armed":""}" type="button" data-act="bclear">${S.armed==="bclear"?"Yes, clear all payments":"Clear all payments"}</button></div></section>`:""}`;
 }
 function aPlayers(){
