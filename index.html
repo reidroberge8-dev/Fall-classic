@@ -75,6 +75,14 @@ p{margin:0}
 .hero{display:flex;flex-direction:column;gap:10px;padding-block:8px}
 .meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-weight:600}
 
+.winners .win-div{display:flex;flex-direction:column;gap:10px}
+.winners .win-div+.win-div{border-top:1px solid var(--line);padding-top:14px}
+.winners h3{margin:0;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--green)}
+.win-team{display:flex;flex-direction:column;gap:2px;background:var(--sunk);border-radius:8px;padding:10px 12px}
+.win-team b{font-size:18px}
+.win-k{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.win-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.win-list li{display:flex;flex-direction:column;gap:1px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
 .rules{margin:0;padding:0;list-style:none;counter-reset:r;display:flex;flex-direction:column}
 .rules li{counter-increment:r;display:grid;grid-template-columns:34px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
@@ -1157,6 +1165,39 @@ function withYear(y,fn){
   S.players=y.players||[]; S.teams=y.teams||[]; S.scores=y.scores||{}; S.course=y.course||S.course; S.event=y.event||S.event; S.teamId=null; S.histMode=true;
   try{ return fn(); } finally { Object.assign(S,keep); S.histMode=false; }
 }
+/* Prize winners for each saved year. The winning team and its golfers are worked out from the saved scores;
+   the other prizes are listed here. A year saved with its own "awards" field uses that instead. */
+const HISTORY_AWARDS={
+  "2026":{
+    men:[
+      {prize:"Lowest net score", who:"Reid", detail:"Net 68 (gross 80)"},
+      {prize:"Most 1-putts", who:"Reid", detail:"6"},
+      {prize:"Closest to the pin – #7", who:"Ralph", detail:"21 ft 3 in"},
+      {prize:"Closest to the pin – #12", who:"Eli", detail:"19 ft 0 in"},
+      {prize:"3-Putt Poker", who:"Tommy", detail:"$107"}],
+    ladies:[
+      {prize:"Lowest net score", who:"Judy", detail:"Net 67 (gross 97)"},
+      {prize:"Fewest putts", who:"Judy", detail:"38"},
+      {prize:"3-Putt Poker", who:"Cali", detail:"$98"}]
+  }
+};
+// Call this while the year's data is swapped in (inside withYear) so it reads that year's teams and scores.
+function winningTeams(d){
+  const ts=S.teams.filter(t=>t.division===d).map(t=>({t,x:teamTotals(t)})).filter(r=>r.x.thru>0);
+  if(!ts.length) return [];
+  const most=Math.max(...ts.map(r=>r.x.thru)), done=ts.filter(r=>r.x.thru===most), best=Math.min(...done.map(r=>r.x.toPar));
+  return done.filter(r=>r.x.toPar===best).map(r=>({name:r.t.name,toPar:r.x.toPar,golfers:teamPlayers(r.t.id).map(p=>p.name).sort((a,b)=>a.localeCompare(b))}));
+}
+function vWinners(y){
+  const aw=y.awards||HISTORY_AWARDS[y.id]||{};
+  const block=d=>{ const wt=winningTeams(d), list=aw[d]||[]; if(!wt.length&&!list.length) return "";
+    return `<div class="win-div"><h3>${divName(d)} division</h3>
+      ${wt.map(w=>`<div class="win-team"><span class="win-k">🏆 Winning team</span><b>${esc(w.name)} <span class="muted">${fmtPar(w.toPar)}</span></b><span>${w.golfers.map(esc).join(", ")}</span></div>`).join("")}
+      ${list.length?`<ul class="win-list">${list.map(a=>`<li><span class="win-k">${esc(a.prize)}</span><span><b>${esc(a.who)}</b>${a.detail?` <span class="muted">· ${esc(a.detail)}</span>`:""}</span></li>`).join("")}</ul>`:""}
+    </div>`; };
+  const body=block("men")+block("ladies");
+  return body?`<section class="panel winners"><h2>Winners</h2>${body}</section>`:"";
+}
 function vHistory(){
   const list=S.history||[];
   const back=`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><button class="back" data-act="welcome" type="button">← Home</button></div>`;
@@ -1165,7 +1206,7 @@ function vHistory(){
   return `${back}
   <div><div class="eyebrow">Past years</div><h1>${esc(y.name||"Fall Classic")} ${esc(y.id)}</h1>${y.date?`<p class="muted" style="margin:4px 0 0">Final results · ${esc(fmtDate(y.date))}</p>`:""}</div>
   ${list.length>1?`<div class="seg" role="group" aria-label="Year">${list.map(x=>`<button type="button" data-act="hyear" data-year="${esc(x.id)}" aria-pressed="${x.id===y.id}">${esc(x.id)}</button>`).join("")}</div>`:""}
-  ${withYear(y,vBoard)}`;
+  ${withYear(y,()=>vWinners(y)+vBoard())}`;
 }
 function aHistory(){
   const year=historyYear(), list=S.history||[], saved=list.find(x=>x.id===year), busy=S.histSaving;
