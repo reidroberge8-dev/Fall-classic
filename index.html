@@ -1690,11 +1690,13 @@ async function loadAce(dataUrl){ aceSrc=dataUrl||null; aceBuf=null; if(!dataUrl)
 function playClip(buf){ try{ const src=actx.createBufferSource(); src.buffer=buf; src.connect(actx.destination); src.start(actx.currentTime+0.02); return true; }catch(e){ return false; } }
 let heckleEl=null;
 // The 3-putt call: say who three-putted first, then play the heckle clip.
-function heckle(names){
-  // The fallback audio element must be started during the tap on iPhone, so warm it up now and play it after the name.
-  if(!(heckleSrc&&heckleBuf&&actx)){ try{ const src=heckleSrc||DEFAULT_HECKLE; if(!heckleEl){ heckleEl=new Audio(src); heckleEl.dataset.src=src; } else if(heckleEl.dataset.src!==src){ heckleEl.src=src; heckleEl.dataset.src=src; }
-    heckleEl.dataset.live=""; heckleEl.muted=true; const pr=heckleEl.play(); if(pr&&pr.then) pr.then(()=>{ if(!heckleEl.dataset.live) try{ heckleEl.pause(); }catch(e){} }).catch(()=>{}); }catch(e){} }
-  sayNames(names,()=>heckleClip()); }
+// 3-putt: play the heckle clip right away (still inside the tap, which iPhones need), then say who did it.
+function heckle(names,say){
+  heckleClip();
+  const line=say||((names||[]).filter(Boolean).length?[...new Set(names.filter(Boolean))].join(" and ")+" 3-putted":"");
+  if(line) setTimeout(()=>speakLine(line),heckleLength()); }
+function heckleLength(){ const d=heckleBuf&&heckleSrc?heckleBuf.duration:(heckleEl&&isFinite(heckleEl.duration)&&heckleEl.duration>0?heckleEl.duration:2.5);
+  return Math.round(Math.max(2.2,d)*1000)+300; }
 function heckleClip(){
   if(heckleSrc&&heckleBuf&&actx){ try{ const src=actx.createBufferSource(), g=actx.createGain(); g.gain.value=1; src.buffer=heckleBuf; src.connect(g); g.connect(actx.destination); src.start(actx.currentTime+0.1); return; }catch(e){} }
   // clip not decoded yet: fall back to a plain audio element
@@ -1707,9 +1709,12 @@ function announceText(t){ t=t||""; let m;
   if((m=t.match(/HOLE IN ONE! (.+?) aced #(\d+)/))) return `${m[1]} made a hole in one on hole ${m[2]}`;
   if((m=t.match(/^\S+ (.+?) (eagled|birdied) #(\d+)/))) return `${m[1]} ${m[2]} hole ${m[3]}`;
   if((m=t.match(/^\S+ (.+?) chipped in on #(\d+)/))) return `${m[1]} chipped in on hole ${m[2]}`;
+  if((m=t.match(/^\S+ (.+?) (\d+)-putted #(\d+)/))) return `${m[1]} ${m[2]} putted on hole ${m[3]}`;
   return ""; }
 const GOOD_SFX=["ace","eagle","birdie"];
-function announceFor(msgs){ return [...new Set((msgs||[]).filter(x=>GOOD_SFX.includes(x.snd)).map(x=>announceText(x.t)).filter(Boolean))].join(". "); }
+// Good news is read first, then any 3-putts.
+function announceFor(msgs){ const m=(msgs||[]).filter(x=>GOOD_SFX.includes(x.snd)||x.snd==="boo").sort((a,b)=>(a.snd==="boo")-(b.snd==="boo"));
+  return [...new Set(m.map(x=>announceText(x.t)).filter(Boolean))].join(". "); }
 function speakLine(txt){ if(!txt||!soundOn()||!window.speechSynthesis) return;
   try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(txt); u.rate=0.95; u.pitch=1; u.volume=1; u.lang="en-US"; speechSynthesis.speak(u); }catch(e){} }
 // How long each sound runs before the voice starts (milliseconds).
@@ -1720,8 +1725,8 @@ function playSfx(kind,names,say){ if(!soundOn()||kind==="none") return; unlockAu
     actx.resume().then(go_).catch(()=>{}); setTimeout(go_,400); setTimeout(go_,1200); return; }
   playSfxNow(kind,names,say); }
 function playSfxNow(kind,names,say){ const a=sfxReady(); const announce=GOOD_SFX.includes(kind)?say:"";
-  if(!a){ if(kind==="boo") heckle(names); speakLine(announce); return; }
-  if(announce) setTimeout(()=>speakLine(announce),sfxLength(kind)); if(kind==="boo") heckle(names); try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
+  if(!a){ if(kind==="boo") heckle(names,say); else speakLine(announce); return; }
+  if(announce) setTimeout(()=>speakLine(announce),sfxLength(kind)); if(kind==="boo") heckle(names,say); try{ navigator.vibrate&&navigator.vibrate(kind==="boo"?[80,60,80]:60); }catch(e){}
   if(kind==="ace"&&aceSrc&&aceBuf&&playClip(aceBuf)) return;
   try{ (SFX[kind]||SFX.ping)(a,a.currentTime+0.02); }catch(e){} }
 function ping(){ playSfx("ping"); }
