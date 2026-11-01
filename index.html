@@ -1563,13 +1563,36 @@ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState!=
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&actx&&actx.state!=="running"&&actx.state!=="closed") actx.resume().catch(()=>{}); });
 /* After the 3-putt clip, the phone says who three-putted. iPhones only allow speech once a tap has started it, so prime it on the first tap. */
 let speechPrimed=false;
+/* Use the most natural-sounding English voice the phone has, instead of the default robotic one.
+   Downloaded "Premium"/"Enhanced" voices and the newer "Natural"/"Neural" ones win; novelty voices are skipped. */
+let bestVoice=null;
+const NOVELTY=/albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|ralph|kathy|grandma|grandpa|eddy|flo|reed|rocko|sandy|shelley/i;
+function pickVoice(){ try{
+  const vs=(speechSynthesis.getVoices()||[]).filter(v=>/^en(-|_|$)/i.test(v.lang)&&!NOVELTY.test(v.name)); if(!vs.length) return null;
+  const score=v=>{ const n=v.name; let s=0;
+    if(/premium/i.test(n)) s+=60; else if(/enhanced/i.test(n)) s+=45;
+    if(/natural|neural|online/i.test(n)) s+=50;
+    if(/^google us english/i.test(n)) s+=35;
+    if(/\b(ava|zoe|evan|nathan|allison|susan|tom|samantha|aaron|nicky|joelle|noelle|jenny|aria|guy)\b/i.test(n)) s+=20;
+    if(/en[-_]us/i.test(v.lang)) s+=10;
+    if(v.localService) s+=2;
+    return s; };
+  return vs.sort((a,b)=>score(b)-score(a))[0]; }catch(e){ return null; } }
+if(window.speechSynthesis){ bestVoice=pickVoice(); try{ speechSynthesis.addEventListener("voiceschanged",()=>{ bestVoice=pickVoice(); }); }catch(e){} }
+// One place to make an utterance, so every call-out uses the same natural voice and pacing.
+function utter(txt){ const u=new SpeechSynthesisUtterance(txt); if(!bestVoice) bestVoice=pickVoice();
+  if(bestVoice){ u.voice=bestVoice; u.lang=bestVoice.lang; } else u.lang="en-US";
+  u.rate=1; u.pitch=1; u.volume=1; return u; }
+// Read numbers and 3-putts the way a person would say them, and end with a little energy.
+function speakable(txt){ return String(txt).replace(/\b(\d) putted\b/g,(m,k)=>({"3":"three","4":"four","5":"five","6":"six"}[k]||k)+"-putted")
+  .split(/\.\s*/).filter(Boolean).map(s=>/birdied|eagled|hole in one|chipped in/.test(s)?s+"!":s+".").join(" "); }
 function primeSpeech(){ if(speechPrimed||!window.speechSynthesis) return; try{ const u=new SpeechSynthesisUtterance(" "); u.volume=0; speechSynthesis.speak(u); speechPrimed=true; }catch(e){} }
 ["touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,primeSpeech,{passive:true}));
 // Say the names, then call next() once (when speech ends, fails, or after a safety timeout).
 function sayNames(names,next){ let fired=false; const go=()=>{ if(!fired){ fired=true; next&&next(); } };
   names=[...new Set((names||[]).filter(Boolean))]; if(!names.length||!soundOn()||!window.speechSynthesis) return go();
   const txt=names.length===1?names[0]:names.slice(0,-1).join(", ")+" and "+names[names.length-1];
-  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(txt); u.rate=0.95; u.pitch=1; u.volume=1; u.lang="en-US";
+  try{ speechSynthesis.cancel(); const u=utter(txt);
     u.onend=go; u.onerror=go; speechSynthesis.speak(u); setTimeout(go,1000+txt.length*90); }catch(e){ go(); } }
 function sfxReady(){ if(!soundOn()) return null; unlockAudio(); return (actx&&actx.state==="running")?actx:null; }
 function noiseBuf(a,secs){ const b=a.createBuffer(1,Math.ceil(a.sampleRate*secs),a.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; return b; }
@@ -1715,8 +1738,8 @@ const GOOD_SFX=["ace","eagle","birdie"];
 // Good news is read first, then any 3-putts.
 function announceFor(msgs){ const m=(msgs||[]).filter(x=>GOOD_SFX.includes(x.snd)||x.snd==="boo").sort((a,b)=>(a.snd==="boo")-(b.snd==="boo"));
   return [...new Set(m.map(x=>announceText(x.t)).filter(Boolean))].join(". "); }
-function speakLine(txt){ if(!txt||!soundOn()||!window.speechSynthesis) return;
-  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(txt); u.rate=0.95; u.pitch=1; u.volume=1; u.lang="en-US"; speechSynthesis.speak(u); }catch(e){} }
+function speakLine(txt){ if(!txt||!soundOn()||!window.speechSynthesis) return; txt=speakable(txt);
+  try{ speechSynthesis.cancel(); const u=utter(txt); speechSynthesis.speak(u); }catch(e){} }
 // How long each sound runs before the voice starts (milliseconds).
 function sfxLength(kind){ if(kind==="ace") return (aceSrc&&aceBuf)?Math.round(aceBuf.duration*1000)+200:3000; return kind==="eagle"?1700:1300; }
 function playSfx(kind,names,say){ if(!soundOn()||kind==="none") return; unlockAudio();
