@@ -393,6 +393,7 @@ details.course:not([open]){gap:0}
 .play{width:100%;border:0;border-radius:999px;background:var(--flag);color:var(--flag-ink);font-family:var(--display);font-weight:700;font-size:30px;
   letter-spacing:.08em;text-transform:uppercase;padding:16px 24px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.3)}
 .play:active{transform:translateY(1px)}
+.play.play-alt{background:#1f5a3a;color:#f4f1e6;font-size:clamp(17px,5.2vw,22px);letter-spacing:.06em;padding:14px 20px;border:2px solid rgba(244,241,230,.35)}
 .divbtn{width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;border:2px solid var(--w-ink);border-radius:16px;background:rgba(255,255,255,.1);
   color:var(--w-ink);font-family:var(--display);font-weight:700;font-size:40px;letter-spacing:.06em;text-transform:uppercase;padding:22px 20px;cursor:pointer;
   backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
@@ -685,7 +686,7 @@ table.grid .netsup{font-size:.6em;vertical-align:super;line-height:0;margin-left
 <main id="main"><div class="wrap" id="app">
   <div class="empty"><b>Loading the tournament…</b></div>
 </div>
-<footer class="foot" id="foot"><button type="button" id="footHistory" hidden>Past years</button><button type="button" id="footAdmin">Tournament admin</button><button type="button" id="footSignIn">Admin sign-in</button><button type="button" id="footSignOut">Sign out</button></footer></main>
+<footer class="foot" id="foot"><button type="button" id="footHistory" hidden>View prior years' results</button><button type="button" id="footAdmin">Tournament admin</button><button type="button" id="footSignIn">Admin sign-in</button><button type="button" id="footSignOut">Sign out</button></footer></main>
 <div class="modal pick-modal" id="pickModal" hidden>
   <div class="modal-back" data-pact="cancel"></div>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="pickTitle" id="pickBody"></div>
@@ -860,7 +861,7 @@ function vWelcome(){
     </div>
     <div class="w-bottom">
       <button class="play" type="button" data-act="rules">Play now</button>
-      ${(S.history||[]).length?`<button class="w-admin" type="button" data-act="history">Past years</button>`:""}
+      ${(S.history||[]).length?`<button class="play play-alt" type="button" data-act="history">View prior years' results</button>`:""}
       ${isAdmin?`<button class="w-admin" type="button" data-act="admin">Tournament admin</button>`:`<button class="w-admin w-signin" type="button" data-act="signin">Admin sign-in</button>`}
     </div>
   </div>`;
@@ -1831,7 +1832,7 @@ document.getElementById("rulesModal").addEventListener("click",e=>{
 });
 document.getElementById("welcome").addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;
   const a=b.dataset.act;
-  if(a==="rules")go("division"); if(a==="admin")go("admin"); if(a==="signin")adminSignIn(); if(a==="welcome")go("welcome");
+  if(a==="rules")go("division"); if(a==="admin")go("admin"); if(a==="history"){S.histYear=null;go("history");} if(a==="signin")adminSignIn(); if(a==="welcome")go("welcome");
   if(a==="pickdiv"){S.div=b.dataset.div;ls("myDiv",S.div);S.courseOpen=false;go("choose");}});
 
 app.addEventListener("click",async e=>{
