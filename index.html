@@ -258,9 +258,14 @@ details.course:not([open]){gap:0}
 .grid tr.par th,.grid tr.par td,.grid tr.par td.sum{background:var(--par-bg);color:var(--fg);font-weight:600}
 .grid td.cnt{background:var(--green-soft);font-weight:700}
 .grid .sum{font-weight:700;background:var(--sunk)}
+.grid .tot18{background:var(--green);color:var(--green-ink)}
+.grid .tot18 .netsup{color:inherit;opacity:.85}
+.grid .tot18{background:var(--green);color:var(--green-ink);font-weight:800}
+.grid .tot18 .netsup{color:inherit;opacity:.85}
 .grid tr.team-row th,.grid tr.team-row td{font-weight:700;border-top:2px solid var(--fg)}
 .grid tr.team-row th,.grid tr.team-row td{background:var(--sunk);background:color-mix(in srgb,var(--fg) 11%,var(--surface));font-size:1.05em}
 .grid tr.team-row td.sum{background:var(--line);background:color-mix(in srgb,var(--fg) 18%,var(--surface))}
+.grid tr.team-row td.sum.tot18{background:var(--green);color:var(--green-ink)}
 .netsup{font-size:.62em;font-weight:600;color:var(--muted);margin-left:1px;vertical-align:super;line-height:0}
 .grid td.cnt .netsup{color:var(--green)}
 .p1{color:var(--green)}.p2{color:var(--fg)}.p3{color:var(--danger)}
@@ -1108,21 +1113,27 @@ function vTeamCard(t,ps,bare){
     const pr=hs.reduce((x,n)=>x+hole(n).par,0);
     const prow=p=>{let g=0,all=true;const cells=hs.map(n=>{const e=entry(p.id,n);const th=teamHole(t,n);const cnt=th&&th.ids.includes(p.id);if(e)g+=e.s;else all=false;
       return `<td class="${cnt?"cnt":""}">${e?`${mark(e.s,hole(n).par)}<sup class="netsup" aria-label="net ${e.s-strokes(p,n)}">${e.s-strokes(p,n)}</sup>`:""}</td>`}).join("");
-      return `<tr><th scope="row">${esc(p.name.split(" ")[0])}</th>${cells}<td class="sum">${g||""}</td></tr>`;};
+      return `<tr><th scope="row">${esc(p.name.split(" ")[0])}</th>${cells}<td class="sum">${g||""}</td>${full?fullCell(p):""}</tr>`;};
     let ts=0;const tcells=hs.map(n=>{const th=teamHole(t,n);if(th)ts+=th.score;return `<td>${th?th.score:""}</td>`}).join("");
-    return `<div class="scroll"><table class="grid num ${t.division==="ladies"?"lad":""}"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">Tot</th></tr></thead>
-      <tbody><tr class="par"><th scope="row">Par</th>${hs.map(n=>`<td>${hole(n).par}</td>`).join("")}<td class="sum">${pr}</td></tr>
+    // Back 9 also gets an 18-hole Total column: gross with net underneath for each golfer, and the team's total score
+    const full=b===18&&a>1, tt=full?teamTotals(t):null;
+    const fullCell=p=>{let g=0,nt=0,k=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(e){g+=e.s;nt+=e.s-strokes(p,n);k++;}}
+      return `<td class="sum tot18">${k?`${g}<sup class="netsup" aria-label="net ${nt}">${nt}</sup>`:""}</td>`;};
+    const par18=rng(1,18).reduce((x,n)=>x+hole(n).par,0);
+    return `<div class="scroll"><table class="grid num ${t.division==="ladies"?"lad":""}"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">${full?"In":"Out"}</th>${full?`<th class="sum tot18">Total</th>`:""}</tr></thead>
+      <tbody><tr class="par"><th scope="row">Par</th>${hs.map(n=>`<td>${hole(n).par}</td>`).join("")}<td class="sum">${pr}</td>${full?`<td class="sum tot18">${par18}</td>`:""}</tr>
       ${ps.map(prow).join("")}
-      <tr class="team-row"><th scope="row">Team</th>${tcells}<td class="sum">${ts||""}</td></tr></tbody></table></div>`;
+      <tr class="team-row"><th scope="row">Team</th>${tcells}<td class="sum">${ts||""}</td>${full?`<td class="sum tot18">${tt.thru?`<span aria-label="team net ${fmtPar(tt.toPar)} to par">${fmtPar(tt.toPar)}</span>`:""}</td>`:""}</tr></tbody></table></div>`;
   };
   const pc=v=>v==null?"":v<=1?"p1":v===2?"p2":"p3";
   const puttHalf=(a,b,lbl)=>{const hs=rng(a,b);
+    const full=b===18&&a>1, all18=p=>{let t=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);const v=e?Number(e.p):NaN;if(!isNaN(v))t+=v;}return t;};
     const prow=p=>{let tot=0;const cells=hs.map(n=>{const e=entry(p.id,n);const v=e?Number(e.p):null;if(v!=null&&!isNaN(v))tot+=v;return `<td class="${pc(v)}">${v??""}</td>`}).join("");
-      return `<tr><th scope="row">${esc(p.name.split(" ")[0])}</th>${cells}<td class="sum">${tot||""}</td></tr>`;};
-    return `<div class="scroll"><table class="grid num putt-grid ${t.division==="ladies"?"lad":""}"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">Tot</th></tr></thead><tbody>${ps.map(prow).join("")}</tbody></table></div>`;};
+      return `<tr><th scope="row">${esc(p.name.split(" ")[0])}</th>${cells}<td class="sum">${tot||""}</td>${full?`<td class="sum tot18">${all18(p)||""}</td>`:""}</tr>`;};
+    return `<div class="scroll"><table class="grid num putt-grid ${t.division==="ladies"?"lad":""}"><thead><tr><th>${lbl}</th>${hs.map(n=>`<th>${n}</th>`).join("")}<th class="sum">${full?"In":"Out"}</th>${full?`<th class="sum tot18">Total</th>`:""}</tr></thead><tbody>${ps.map(prow).join("")}</tbody></table></div>`;};
   const pcount=p=>{let zero=0,one=0,three=0;for(let n=1;n<=18;n++){const e=entry(p.id,n);if(!e)continue;const v=Number(e.p);if(v===0)zero++;else if(v===1)one++;else if(v>=3)three++;}return {zero,one,three,cards:2+one+2*zero};};
   const putts=`<table class="card-table num"><thead><tr><th>Golfer</th><th class="r">0 putts</th><th class="r">1-putts</th><th class="r">3+ putts</th><th class="r">Cards</th></tr></thead><tbody>${ps.map(p=>{const c=pcount(p);return `<tr><td>${esc(p.name)}</td><td class="r p1"><b>${c.zero}</b></td><td class="r p1"><b>${c.one}</b></td><td class="r p3"><b>${c.three}</b></td><td class="r"><b>${c.cards}</b></td></tr>`}).join("")}</tbody></table><p class="note">Cards = 2 to start, +1 per 1-putt, +2 per 0-putt hole.</p>`;
-  const inner=`<div class="sc-cap"><b>Front 9</b> · Best <b class="n">1</b> net score</div>${half(1,9,"Out")}<div class="sc-cap"><b>Back 9</b> · Best <b class="n">2</b> net scores</div>${half(10,18,"In")}<p class="note sc-note">Big number = gross score. Small number = net score.</p>`;
+  const inner=`<div class="sc-cap"><b>Front 9</b> · Best <b class="n">1</b> net score</div>${half(1,9,"Out")}<div class="sc-cap"><b>Back 9</b> · Best <b class="n">2</b> net scores</div>${half(10,18,"In")}<p class="note sc-note">Big number = gross score. Small number = net score. Team Total is the team's net score to par, the same as the leaderboard.</p>`;
   if(bare) return inner;
   return `<section class="panel"><h2>Team scorecard</h2>${inner}<h3>Putts</h3>${putts}</section>
     <button class="btn" data-act="leave" type="button">This isn't my team</button>`;
