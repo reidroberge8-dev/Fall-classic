@@ -1,0 +1,22 @@
+name: Export results (one-time)
+on:
+  push:
+    branches: [results-export]
+permissions:
+  contents: write
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read prior-year results from Firestore (public read)
+        run: |
+          curl -sS "https://firestore.googleapis.com/v1/projects/fall-classic-daa7a/databases/(default)/documents/history?pageSize=100&key=AIzaSyDInvsHioe-77_DAh8NyEAjMC1eYcF95so" -o history.json
+          head -c 300 history.json
+      - name: Save to this branch
+        run: |
+          git config user.name "results-export"
+          git config user.email "actions@users.noreply.github.com"
+          git add history.json
+          git commit -m "Export history.json" || echo "nothing to commit"
+          git push
